@@ -1214,11 +1214,12 @@
     }
 
     function toggleSelectAll() { allSelected = !allSelected; document.querySelectorAll('.modal-checkbox').forEach(cb => cb.checked = allSelected); }
-    function doExport() {
+    function doExport(typeOverride) {
         const checked = document.querySelectorAll('.modal-checkbox:checked');
         if(checked.length === 0) return alert("Bitte wählen.");
         const names = Array.from(checked).map(cb => cb.value).join(',');
-        const type = currentTab === 'light' ? 'outputs' : 'inputs';
+        // Lichter: Standard = virtuelle Ausgänge; 'inputs' = UDP-Rückmeldungen der Lichter mit Loxone Sync
+        const type = typeOverride === 'inputs' ? 'inputs' : (currentTab === 'light' ? 'outputs' : 'inputs');
         window.location.href = `/api/download/${type}?names=${names}`;
         closeModal('exportModal');
     }
@@ -1249,7 +1250,12 @@
     }
     function updateTransLabel(val, id, unit) { document.getElementById(id).innerText = val + ' ' + unit; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-    function openExportModal() { document.getElementById('exportModal').style.display = 'flex'; loadExportList(); allSelected = false; }
+    function openExportModal() {
+        document.getElementById('exportModal').style.display = 'flex';
+        const inputsBtn = document.getElementById('exportInputsBtn');
+        if (inputsBtn) inputsBtn.style.display = currentTab === 'light' ? '' : 'none';
+        loadExportList(); allSelected = false;
+    }
     function loadExportList() {
         const list = document.getElementById('exportList');
         list.innerHTML = '';

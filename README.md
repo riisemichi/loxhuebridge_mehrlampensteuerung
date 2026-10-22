@@ -10,7 +10,7 @@ Sie ermöglicht eine extrem schnelle, lokale Steuerung ohne Cloud-Verzögerung u
 
 ---
 
-## 🚀 Features V2.5.12 Mehrlampensteuerung
+## 🚀 Features V2.5.13 Mehrlampensteuerung
 
 ### Neu in diesem Fork
 
@@ -63,6 +63,8 @@ Sie ermöglicht eine extrem schnelle, lokale Steuerung ohne Cloud-Verzögerung u
 * **SD-Card Mode:** Optional werden Logs nur im RAM gehalten. In diesem Modus wird keine `logs.db` geöffnet und kein SQLite-WAL geschrieben.
 * **Backup & Restore:** Lade deine komplette Konfiguration inkl. Mappings als Backup herunter und stelle sie bei Bedarf wieder her. Zusätzlich gibt es ein Backup ohne Zugangsdaten, bei dem Hue App-Key, MQTT-Passwort und Auth-Token maskiert werden.
 * **Loxone Integration:** Schalten, Dimmen, Warmweiß, RGB sowie Rückmeldungen via UDP.
+* **Explizite Befehlstypen:** `/{name}/dim/<v>`, `/{name}/rgb/<v>`, `/{name}/ct/<v>` und `/{name}/switch/<v>` legen fest, wie der Wert gelesen wird. Damit funktionieren reines Rot (`/{name}/rgb/100`) und 1 % Helligkeit (`/{name}/dim/1`).
+* **Farbrückmeldung im Loxone-Format:** Lichter mit Loxone Sync melden zusätzlich `hue.<name>.rgb` (R + G*1000 + B*1000000) und im Weißton-Modus `hue.<name>.kelvin` und `hue.<name>.lumitech` (`20BBBKKKK`).
 * **MQTT Support:** Sendet Statusänderungen parallel an einen MQTT Broker.
 * **Stabilität:** Watchdog, Queue und Rate-Limiting verhindern Überlastung der Bridge.
 * 🎛️ **Individuelle Geräte-Steuerung:** Detaillierte Einstellungen pro Gerät direkt im UI.
@@ -169,8 +171,8 @@ Dieses Repository verwendet zwei Branches:
 
 | Branch | Version | Zweck |
 | --- | --- | --- |
-| `main` | `2.5.12` | Stabiler Stand für den normalen Betrieb, inkl. Mehrlampengruppen, Ablauf-Clustern, Effekt-Fallback und Stabilitätskorrekturen |
-| `develop` | `2.5.12-dev` | Weiterentwicklungsstand, aktuell mit demselben Anwendungscode wie `main`; künftige Änderungen werden zuerst hier getestet |
+| `main` | `2.5.13` | Stabiler Stand für den normalen Betrieb, inkl. Mehrlampengruppen, Ablauf-Clustern, Effekt-Fallback und Stabilitätskorrekturen |
+| `develop` | `2.5.12-dev` | Weiterentwicklungsstand; künftige Änderungen werden zuerst hier getestet |
 
 Wenn kein Branch angegeben wird, wird normalerweise `main` installiert. Das ist die empfohlene Variante für den normalen Betrieb.
 
@@ -211,7 +213,7 @@ git pull --ff-only origin main
 docker compose up -d --build
 ```
 
-Danach zeigt **System** die Version `2.5.12` ohne `-dev` an.
+Danach zeigt **System** die Version `2.5.13` ohne `-dev` an.
 
 ---
 
@@ -296,7 +298,7 @@ Neues Passwort: ********
 Passwort wiederholen: ********
 ```
 
-Das Passwort wird nicht im Klartext gespeichert, sondern als Hash in `config.json`. Loxone-Steuer-URLs wie `/wohnzimmer/50` oder `/wohnzimmer/sunrise/30` bleiben bewusst ohne Auth erreichbar, damit bestehende virtuelle Ausgänge in Loxone weiter funktionieren.
+Das Passwort wird nicht im Klartext gespeichert, sondern als Hash in `config.json`. Loxone-Steuer-URLs wie `/wohnzimmer/50`, `/wohnzimmer/rgb/100` oder `/wohnzimmer/sunrise/30` bleiben bewusst ohne Auth erreichbar, damit bestehende virtuelle Ausgänge in Loxone weiter funktionieren.
 
 Die Passwortprüfung läuft asynchron mit höchstens zwei parallelen Berechnungen. Erfolgreiche Prüfungen werden höchstens 60 Sekunden in einem begrenzten Cache wiederverwendet; geänderte Zugangsdaten machen alte Berechtigungen ungültig. Nach zehn fehlgeschlagenen Versuchen innerhalb einer Minute wird die betreffende Quelladresse vorübergehend mit HTTP 429 gebremst. Diese HTTP-429-Antwort des Dashboards ist vom Hue-Rate-Limit im Lichtlog zu unterscheiden. Loxone-Steuerpfade bleiben davon ausgenommen.
 
@@ -532,6 +534,7 @@ Anstatt Befehle manuell einzutippen, kannst du deine konfigurierte loxHueBridge 
 3. Wähle alle Geräte aus, die du in Loxone haben möchtest.
 4. Klicke auf **📥 XML**.
 5. Exportiere einmal im Tab **💡 Lichter** und einmal im Tab **📡 Sensoren**.
+6. Für Rückmeldungen der Lichter mit aktiviertem **Loxone Sync** im Tab **💡 Lichter** zusätzlich **📡 UDP-Rückmeldungen** wählen. Die Datei enthält `on`, `bri`, `mirek`, `kelvin`, `rgb` und `lumitech` als virtuelle UDP-Eingänge.
 
 ### Schritt 2: Vorlagen in Loxone Config importieren
 
@@ -553,7 +556,7 @@ Anstatt Befehle manuell einzutippen, kannst du deine konfigurierte loxHueBridge 
 
 1. Klicke im Peripheriebaum auf **Virtuelle UDP Eingänge**.
 2. Klicke auf **Vordefinierte Geräte**.
-3. Wähle **LoxHueBridge Sensors**.
+3. Wähle **LoxHueBridge Inputs** (ältere Exporte: **LoxHueBridge Sensors**).
 
 Hinweis: Kontrolliere, ob der UDP Empfangsport, Standard `7000`, mit deiner loxHueBridge Einstellung übereinstimmt.
 
@@ -570,6 +573,12 @@ Adresse: `http://<IP-DER-BRIDGE>:8555`
 | **Dimmen** | `/kueche/<v>` | Werte 2-100 % |
 | **Warmweiß** | `/kueche/<v>` | Smart Actuator Logik im Format `20BBBKKKK`, z. B. `201002700` |
 | **RGB** | `/kueche/<v>` | RGB Logik: R + G*1000 + B*1000000, jede Komponente 0-100 |
+| **Schalten (explizit)** | `/kueche/switch/<v>` | 0 = Aus, jeder andere Wert = Ein |
+| **Dimmen (explizit)** | `/kueche/dim/<v>` | 0 = Aus, 1-100 % (auch 1 %) |
+| **Warmweiß (explizit)** | `/kueche/ct/<v>` | `20BBBKKKK`, 0 = Aus |
+| **RGB (explizit)** | `/kueche/rgb/<v>` | R + G*1000 + B*1000000, auch reines Rot `1..100` |
+
+Der Pfad `/kueche/<v>` rät den Typ aus dem Zahlenbereich: `1` schaltet nur ein, `2..100` ist Helligkeit, `20BBBKKKK` ist Warmweiß, alles andere RGB. Reines Rot (`R` ohne `G` und `B`, also `1..100`) und 1 % Helligkeit sind darüber nicht möglich. Dafür die expliziten Pfade verwenden. Der XML-Export erzeugt pro Licht den bisherigen Befehl sowie `Dim`, `RGB` (bei Farblampen) und `CT` (bei Lampen mit Farbtemperatur).
 
 Warmweiß-Werte werden strikt als `20BBBKKKK` validiert: `BBB` ist die Helligkeit `000..100`, `KKKK` ist Kelvin `2000..6500`. Beispiel `201002700` bedeutet 100 % bei 2700 K. Ungültige Werte werden mit HTTP 400 abgelehnt.
 
@@ -587,6 +596,19 @@ Port: 7000, falls nicht geändert.
 | **Taster (Lang)** | `hue.taster.button long_press` |
 | **Drehring (Rechts)** | `hue.dial.rotary cw` |
 | **Drehring (Links)** | `hue.dial.rotary ccw` |
+
+**Lichter mit Loxone Sync (UDP Eingang):**
+
+| Typ | Befehlserkennung | Wertebereich |
+| --- | --- | --- |
+| **Ein/Aus** | `hue.kueche.on \v` | 0-1 |
+| **Helligkeit** | `hue.kueche.bri \v` | 0-100 |
+| **Farbtemperatur (Mirek)** | `hue.kueche.mirek \v` | 153-500 |
+| **Farbtemperatur (Kelvin)** | `hue.kueche.kelvin \v` | nur im Weißton-Modus |
+| **Farbe (Loxone RGB)** | `hue.kueche.rgb \v` | R + G*1000 + B*1000000, je 0-100, 0 bei Aus |
+| **Warmweiß (Lumitech)** | `hue.kueche.lumitech \v` | `20BBBKKKK`, nur im Weißton-Modus |
+
+Die Werte stammen aus dem tatsächlichen Lampenzustand (Hue GET bzw. EventStream). `hue.kueche.hex #rrggbb` wird weiterhin für Dashboard und MQTT gesendet.
 
 ---
 
