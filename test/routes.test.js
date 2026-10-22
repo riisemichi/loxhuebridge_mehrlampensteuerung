@@ -557,3 +557,65 @@ test('Routes - XML Exports escape special characters', async (t) => {
     assert.strictEqual(inputsXml.includes('&amp;'), true);
     assert.strictEqual(inputsXml.includes('Sensor & Taster'), false);
 });
+
+test('Routes - typisierte Loxone-Pfade validieren je Befehlstyp', async () => {
+    configManager.isConfigured = true;
+    configManager.mapping = [
+        { hue_uuid: 'light-1', hue_name: 'Test Lampe', loxone_name: 'test_lampe', hue_type: 'light' }
+    ];
+    const handler = getRouteHandler('/:name/:type/:value');
+
+    let statusCode = null;
+    const res = {
+        status(code) { statusCode = code; return this; },
+        send() { return this; }
+    };
+
+    await handler({ params: { name: 'test_lampe', type: 'dim', value: '150' } }, res, () => {});
+    assert.strictEqual(statusCode, 400);
+
+    statusCode = null;
+    await handler({ params: { name: 'test_lampe', type: 'rgb', value: 'candle' } }, res, () => {});
+    assert.strictEqual(statusCode, 400);
+
+    let nextCalled = false;
+    statusCode = null;
+    await handler({ params: { name: 'test_lampe', type: 'foo', value: '50' } }, res, () => { nextCalled = true; });
+    assert.strictEqual(nextCalled, true);
+    assert.strictEqual(statusCode, null);
+});
+
+test('Routes - XML Exports enthalten Befehlstypen und Loxone-Sync-Lichter', () => {
+    configManager.mapping = [
+        { hue_uuid: 'uuid-color', hue_name: 'Farbe', loxone_name: 'farbe', hue_type: 'light', sync_lox: true },
+        { hue_uuid: 'uuid-white', hue_name: 'Weiss', loxone_name: 'weiss', hue_type: 'light', sync_lox: false },
+        { hue_uuid: 'uuid-room', hue_name: 'Raum', loxone_name: 'raum', hue_type: 'group', sync_lox: true }
+    ];
+    const hueManager = require('../lib/hue');
+    const caps = hueManager.getLightCapabilities();
+    caps['uuid-white'] = { supportsColor: false, supportsCt: false };
+
+    try {
+        let outputsXml = '';
+        getRouteHandler('/api/download/outputs')({ query: {} }, { set() {}, send(c) { outputsXml = c; } });
+        assert.ok(outputsXml.includes('CmdOn="/farbe/&lt;v&gt;"'));
+        assert.ok(outputsXml.includes('CmdOn="/farbe/dim/&lt;v&gt;"'));
+        assert.ok(outputsXml.includes('CmdOn="/farbe/rgb/&lt;v&gt;"'));
+        assert.ok(outputsXml.includes('CmdOn="/farbe/ct/&lt;v&gt;"'));
+        assert.ok(outputsXml.includes('CmdOn="/weiss/dim/&lt;v&gt;"'));
+        assert.strictEqual(outputsXml.includes('/weiss/rgb/'), false);
+        assert.strictEqual(outputsXml.includes('/weiss/ct/'), false);
+
+        let inputsXml = '';
+        getRouteHandler('/api/download/inputs')({ query: {} }, { set() {}, send(c) { inputsXml = c; } });
+        for (const key of ['on', 'bri', 'mirek', 'kelvin', 'rgb', 'lumitech']) {
+            assert.ok(inputsXml.includes(`Check="hue.farbe.${key} \\v"`), `hue.farbe.${key} fehlt`);
+        }
+        assert.ok(inputsXml.includes('Check="hue.raum.on \\v"'));
+        assert.ok(inputsXml.includes('Check="hue.raum.bri \\v"'));
+        assert.strictEqual(inputsXml.includes('hue.raum.rgb'), false);
+        assert.strictEqual(inputsXml.includes('hue.weiss.'), false);
+    } finally {
+        delete caps['uuid-white'];
+    }
+});

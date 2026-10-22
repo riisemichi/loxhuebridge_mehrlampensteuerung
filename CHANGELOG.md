@@ -1,3 +1,17 @@
+## [2.5.13] - 2026-10-22
+### Neu
+- Explizite Loxone-Befehlstypen `/{name}/dim/<v>`, `/{name}/rgb/<v>`, `/{name}/ct/<v>` und `/{name}/switch/<v>`, auch für `all`/`alles`. Wie `/{name}/<v>` und `/{name}/sunrise/<s>` ohne Auth erreichbar.
+- Farbrückmeldung im Loxone-Format für Lichter mit Loxone Sync: `hue.<name>.rgb` (R + G*1000 + B*1000000, je 0..100) sowie im Weißton-Modus `hue.<name>.kelvin` und `hue.<name>.lumitech` (`20BBBKKKK`). Es werden nur Istwerte aus Hue GET/SSE gemeldet.
+- XML-Export der virtuellen Ausgänge enthält zusätzlich `Dim`, `RGB` und `CT` je nach Lampenfähigkeit. Der bisherige Befehl `/{name}/<v>` bleibt erhalten.
+- XML-Export der UDP-Eingänge enthält Lichter und Gruppen mit Loxone Sync (`on`, `bri`, für Lichter zusätzlich `mirek`, `kelvin`, `rgb`, `lumitech`). Im Tab Lichter über **📡 UDP-Rückmeldungen** erreichbar. Vorlagentitel jetzt „LoxHueBridge Inputs“.
+
+### Korrekturen
+- Reines Rot (`R` 1..100 ohne G/B) wird über `/{name}/rgb/<v>` als Farbe statt als Helligkeit gesendet.
+- 1 % Helligkeit ist über `/{name}/dim/1` möglich; bisher schaltete `1` nur ein.
+
+### Prüfungen
+- Tests für Befehlstypen, Farbrückmeldung, XML-Exporte und Auth-Ausnahmen der neuen Pfade.
+
 ## [2.5.12] - 2026-09-06
 ### Veröffentlichung
 - Aktuellen Entwicklungsstand auf `main` übernommen, einschließlich Ablauf-Clustern, Lampendiagnose, Funkmaßnahmen und der unten dokumentierten Stabilitäts- und Sicherheitskorrekturen.

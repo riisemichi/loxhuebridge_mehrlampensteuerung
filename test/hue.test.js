@@ -1796,3 +1796,95 @@ test('Effekt-Keywords sind vollständig und korrekt definiert', () => {
     assert.strictEqual(normalize('fireplace'), 'fire');
     assert.strictEqual(normalize('candle'), 'candle');
 });
+
+test('Befehlstypen: Rot 100 wird bei rgb als Farbe statt als Helligkeit gesendet', () => {
+    const { buildLoxoneCommandPayload } = _internals;
+    const red = buildLoxoneCommandPayload('typed-light', '100', 'rgb');
+    assert.deepStrictEqual(red.on, { on: true });
+    assert.strictEqual(red.dimming.brightness, 100);
+    assert.deepStrictEqual(red.color.xy, rgbToXy(100, 0, 0));
+
+    // Heuristik von /{name}/<v> bleibt unverändert
+    assert.deepStrictEqual(buildLoxoneCommandPayload('typed-light', '100'), { on: { on: true }, dimming: { brightness: 100 } });
+    assert.deepStrictEqual(buildLoxoneCommandPayload('typed-light', '1'), { on: { on: true } });
+    assert.deepStrictEqual(buildLoxoneCommandPayload('typed-light', '0', 'rgb'), { on: { on: false } });
+});
+
+test('Befehlstypen: dim 1 dimmt auf 1 %, switch schaltet nur, ct parst Lumitech', () => {
+    const { buildLoxoneCommandPayload } = _internals;
+    assert.deepStrictEqual(buildLoxoneCommandPayload('typed-light', '1', 'dim'), { on: { on: true }, dimming: { brightness: 1 } });
+    assert.deepStrictEqual(buildLoxoneCommandPayload('typed-light', '0', 'dim'), { on: { on: false } });
+    assert.deepStrictEqual(buildLoxoneCommandPayload('typed-light', '50', 'switch'), { on: { on: true } });
+    assert.deepStrictEqual(buildLoxoneCommandPayload('typed-light', '0', 'switch'), { on: { on: false } });
+    assert.deepStrictEqual(buildLoxoneCommandPayload('typed-light', '0', 'ct'), { on: { on: false } });
+    assert.deepStrictEqual(buildLoxoneCommandPayload('typed-light', '201002700', 'ct'), {
+        on: { on: true }, dimming: { brightness: 100 }, color_temperature: { mirek: 370 }
+    });
+
+    assert.throws(() => buildLoxoneCommandPayload('typed-light', '150', 'dim'), error => error.code === 'INVALID_LOXONE_VALUE');
+    assert.throws(() => buildLoxoneCommandPayload('typed-light', '50', 'ct'), error => error.code === 'INVALID_LOXONE_VALUE');
+    assert.throws(() => buildLoxoneCommandPayload('typed-light', '101', 'rgb'), error => error.code === 'INVALID_LOXONE_VALUE');
+
+    assert.strictEqual(hueManager.isValidLoxoneCommandValue('1', 'dim'), true);
+    assert.strictEqual(hueManager.isValidLoxoneCommandValue('150', 'dim'), false);
+    assert.strictEqual(hueManager.isValidLoxoneCommandType('RGB'), true);
+    assert.strictEqual(hueManager.isValidLoxoneCommandType('sunrise'), false);
+});
+
+test('executeCommand mit Typ rgb sendet reines Rot als Farbe', async () => {
+    axiosPutCalls.length = 0;
+    configManager.config.bridgeIp = 'bridge';
+    configManager.config.appKey = 'app-key';
+    configManager.config.transitionTime = 0;
+    hueManager.HUE_RESOURCE_DELAYS.light.delayMs = 0;
+
+    await hueManager.executeCommand({ hue_uuid: 'light-typed-red', hue_type: 'light', loxone_name: 'typed_red' }, '100', null, 'rgb');
+    await wait(80);
+
+    assert.strictEqual(axiosPutCalls.length, 1);
+    assert.deepStrictEqual(axiosPutCalls[0].payload.color.xy, rgbToXy(100, 0, 0));
+});
+
+test('Farbrückmeldung sendet rgb, kelvin und lumitech im Loxone-Format', () => {
+    const loxoneManager = require('../lib/loxone');
+    const originalSend = loxoneManager.sendToLoxone;
+    const sent = [];
+    loxoneManager.sendToLoxone = msg => sent.push(msg);
+    const originalMapping = configManager.mapping;
+    try {
+        _internals.resetLightColorStateForTests();
+        configManager.mapping = [{ hue_type: 'light', hue_uuid: 'fb-light', loxone_name: 'fb', sync_lox: true }];
+        delete configManager.statusCache.fb;
+
+        // Farbmodus: reines Rot bei 50 %
+        _internals.processHueEvents([{ type: 'update', data: [{
+            id: 'fb-light', on: { on: true }, dimming: { brightness: 50 },
+            color: { xy: rgbToXy(100, 0, 0) }, color_temperature: { mirek: null, mirek_valid: false }
+        }] }]);
+        const rgbMsg = sent.filter(m => m.startsWith('hue.fb.rgb ')).pop();
+        assert.ok(rgbMsg, 'rgb-Rückmeldung fehlt');
+        const rgb = Number(rgbMsg.split(' ')[1]);
+        assert.strictEqual(rgb % 1000, 50);
+        assert.strictEqual(rgb, 50, `Rot 50 % erwartet: ${rgb}`);
+        assert.strictEqual(sent.some(m => m.startsWith('hue.fb.lumitech ')), false);
+
+        // Weißton-Modus: 2700 K bei 80 %
+        sent.length = 0;
+        _internals.processHueEvents([{ type: 'update', data: [{
+            id: 'fb-light', dimming: { brightness: 80 }, color_temperature: { mirek: 370, mirek_valid: true }
+        }] }]);
+        assert.ok(sent.includes('hue.fb.kelvin 2703'), sent.join(','));
+        assert.ok(sent.includes('hue.fb.lumitech 200802703'), sent.join(','));
+
+        // Aus: rgb 0, Lumitech mit Helligkeit 0
+        sent.length = 0;
+        _internals.processHueEvents([{ type: 'update', data: [{ id: 'fb-light', on: { on: false } }] }]);
+        assert.ok(sent.includes('hue.fb.rgb 0'), sent.join(','));
+        assert.ok(sent.includes('hue.fb.lumitech 200002703'), sent.join(','));
+    } finally {
+        loxoneManager.sendToLoxone = originalSend;
+        configManager.mapping = originalMapping;
+        delete configManager.statusCache.fb;
+        _internals.resetLightColorStateForTests();
+    }
+});
