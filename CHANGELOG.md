@@ -9,6 +9,7 @@
 - Reines Rot (`R` 1..100 ohne G/B) wird über `/{name}/rgb/<v>` als Farbe statt als Helligkeit gesendet.
 - 1 % Helligkeit ist über `/{name}/dim/1` möglich; bisher schaltete `1` nur ein.
 - Löschen-Button (✖) in der Geräteliste löscht wieder den Eintrag statt die Details zu öffnen. Der Inline-Handler wurde durch die doppelten Anführungszeichen des Namens abgeschnitten.
+- Hue-Scheduler hält den globalen Mindestabstand exakt ein: Er misst ab dem tatsächlichen Start einer Aufgabe und prüft nach dem Aufwachen erneut, da Timer ~1 ms zu früh feuern können. Vorher konnte ein PUT 1 ms zu früh starten.
 
 ### Prüfungen
 - Tests für Befehlstypen, Farbrückmeldung, XML-Exporte und Auth-Ausnahmen der neuen Pfade.
