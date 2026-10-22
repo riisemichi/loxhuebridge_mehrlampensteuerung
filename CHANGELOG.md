@@ -4,10 +4,11 @@
 - XML-Export der virtuellen Ausgänge erzeugt pro Licht genau einen Befehl passend zur Lampe: `RGBW` (Farbe), `CT` (nur Weißton), `Dim` (nur dimmbar) oder `Switch` (nur Ein/Aus). Räume, Zonen und „Alle Lichter“ erhalten den Befehl, der alle enthaltenen Lampen abdeckt. Nur wenn die Fähigkeiten unbekannt sind, werden weiterhin alle Varianten exportiert. Der Export lädt die Lampenfähigkeiten vorher neu von der Bridge.
 
 ### Korrekturen
+- RGB-Farben behalten beim Dimmen ihren Farbton. Loxone dimmt RGB durch Skalieren aller Komponenten; die Farbe wird jetzt vor der Umrechnung auf volle Helligkeit normiert, damit die Gammakurve Mischfarben wie Orange bei niedriger Helligkeit nicht ins Rötliche verschiebt. Die Helligkeit wird unverändert über `dimming` gesendet.
 - Zonen lösen auch Lampen auf, die in Hue API V2 direkt als Kind (`rtype: light`) statt über das Gerät eingetragen sind. Betrifft Export und Effekt-Fallback.
 
 ### Prüfungen
-- Tests für `rgbw`, den Export pro Lampenfähigkeit, kombinierte Gruppenfähigkeiten und Zonen mit direkten Lampen-Kindern.
+- Tests für gleichbleibenden Farbton beim Dimmen, `rgbw`, den Export pro Lampenfähigkeit, kombinierte Gruppenfähigkeiten und Zonen mit direkten Lampen-Kindern.
 
 ## [2.5.14] - 2026-10-22
 ### Neu

@@ -1850,6 +1850,17 @@ test('Befehlstypen: rgbw nimmt RGB und Lumitech ohne Helligkeits-Heuristik an', 
     assert.strictEqual(hueManager.isValidLoxoneCommandType('RGBW'), true);
 });
 
+test('RGB: Farbton bleibt beim Dimmen gleich, nur die Helligkeit ändert sich', () => {
+    const { buildLoxoneCommandPayload } = _internals;
+    const full = buildLoxoneCommandPayload('typed-light', '50100', 'rgb');   // Orange 100 %
+    const half = buildLoxoneCommandPayload('typed-light', '25050', 'rgb');   // Orange 50 %
+    const low = buildLoxoneCommandPayload('typed-light', '5010', 'rgbw');    // Orange 10 %
+    assert.deepStrictEqual(full.color.xy, rgbToXy(100, 50, 0));
+    assert.deepStrictEqual(half.color.xy, full.color.xy);
+    assert.deepStrictEqual(low.color.xy, full.color.xy);
+    assert.deepStrictEqual([full.dimming.brightness, half.dimming.brightness, low.dimming.brightness], [100, 50, 10]);
+});
+
 test('Export-Befehlstyp folgt den Lampenfähigkeiten', () => {
     const { getExportCommandType } = hueManager;
     assert.strictEqual(getExportCommandType(null), 'auto');
