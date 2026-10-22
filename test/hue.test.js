@@ -1831,6 +1831,55 @@ test('Befehlstypen: dim 1 dimmt auf 1 %, switch schaltet nur, ct parst Lumitech'
     assert.strictEqual(hueManager.isValidLoxoneCommandType('sunrise'), false);
 });
 
+test('Befehlstypen: rgbw nimmt RGB und Lumitech ohne Helligkeits-Heuristik an', () => {
+    const { buildLoxoneCommandPayload } = _internals;
+    assert.deepStrictEqual(buildLoxoneCommandPayload('typed-light', '0', 'rgbw'), { on: { on: false } });
+    // Reines Rot 1..100 bleibt Farbe
+    const red = buildLoxoneCommandPayload('typed-light', '50', 'rgbw');
+    assert.strictEqual(red.dimming.brightness, 50);
+    assert.ok(red.color, 'Rot 50 muss als Farbe gesendet werden');
+    assert.deepStrictEqual(buildLoxoneCommandPayload('typed-light', '100100100', 'rgbw').color, { xy: rgbToXy(100, 100, 100) });
+    // Lumitech-Weißton
+    assert.deepStrictEqual(buildLoxoneCommandPayload('typed-light', '201002700', 'rgbw'), {
+        on: { on: true }, dimming: { brightness: 100 }, color_temperature: { mirek: 370 }
+    });
+    assert.deepStrictEqual(buildLoxoneCommandPayload('typed-light', '200002700', 'rgbw'), { on: { on: false } });
+
+    assert.throws(() => buildLoxoneCommandPayload('typed-light', '101', 'rgbw'), error => error.code === 'INVALID_LOXONE_VALUE');
+    assert.throws(() => buildLoxoneCommandPayload('typed-light', '201009999', 'rgbw'), error => error.code === 'INVALID_LOXONE_VALUE');
+    assert.strictEqual(hueManager.isValidLoxoneCommandType('RGBW'), true);
+});
+
+test('RGB: Farbton bleibt beim Dimmen gleich, nur die Helligkeit ändert sich', () => {
+    const { buildLoxoneCommandPayload } = _internals;
+    const full = buildLoxoneCommandPayload('typed-light', '50100', 'rgb');   // Orange 100 %
+    const half = buildLoxoneCommandPayload('typed-light', '25050', 'rgb');   // Orange 50 %
+    const low = buildLoxoneCommandPayload('typed-light', '5010', 'rgbw');    // Orange 10 %
+    assert.deepStrictEqual(full.color.xy, rgbToXy(100, 50, 0));
+    assert.deepStrictEqual(half.color.xy, full.color.xy);
+    assert.deepStrictEqual(low.color.xy, full.color.xy);
+    assert.deepStrictEqual([full.dimming.brightness, half.dimming.brightness, low.dimming.brightness], [100, 50, 10]);
+});
+
+test('Export-Befehlstyp folgt den Lampenfähigkeiten', () => {
+    const { getExportCommandType } = hueManager;
+    assert.strictEqual(getExportCommandType(null), 'auto');
+    assert.strictEqual(getExportCommandType({ supportsColor: true, supportsCt: true, supportsDimming: true }), 'rgbw');
+    assert.strictEqual(getExportCommandType({ supportsColor: false, supportsCt: true, supportsDimming: true }), 'ct');
+    assert.strictEqual(getExportCommandType({ supportsColor: false, supportsCt: false, supportsDimming: true }), 'dim');
+    assert.strictEqual(getExportCommandType({ supportsColor: false, supportsCt: false, supportsDimming: false }), 'switch');
+});
+
+test('resolveGroupLightIds übernimmt direkte Lampen-Kinder von Zonen', () => {
+    const zones = [{
+        id: 'zone-1',
+        services: [{ rtype: 'grouped_light', rid: 'grouped-zone' }],
+        children: [{ rtype: 'light', rid: 'light-3' }, { rtype: 'device', rid: 'device-1' }, { rtype: 'light', rid: 'light-1' }]
+    }];
+    const devices = [{ id: 'device-1', services: [{ rtype: 'light', rid: 'light-1' }] }];
+    assert.deepStrictEqual(resolveGroupLightIds('grouped-zone', [], zones, devices), ['light-1', 'light-3']);
+});
+
 test('executeCommand mit Typ rgb sendet reines Rot als Farbe', async () => {
     axiosPutCalls.length = 0;
     configManager.config.bridgeIp = 'bridge';

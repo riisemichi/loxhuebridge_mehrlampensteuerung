@@ -534,7 +534,7 @@ test('Routes - XML Exports escape special characters', async (t) => {
         send: (content) => { outputsXml = content; }
     };
 
-    handlerOutputs({ query: {} }, resOutputs);
+    await handlerOutputs({ query: {} }, resOutputs);
 
     assert.strictEqual(outputsHeaders['Content-Type'], 'text/xml');
     assert.strictEqual(outputsXml.includes('&amp;'), true);
@@ -585,26 +585,59 @@ test('Routes - typisierte Loxone-Pfade validieren je Befehlstyp', async () => {
     assert.strictEqual(statusCode, null);
 });
 
-test('Routes - XML Exports enthalten Befehlstypen und Loxone-Sync-Lichter', () => {
+function mockHueResourcesForExport(resources) {
+    // URL-basierte Antworten für buildDeviceMap und die Gruppenauflösung (Cache-unabhängig)
+    const respond = (url) => {
+        const name = url.split('/resource/')[1];
+        return { data: { data: resources[name] || [] } };
+    };
+    for (let i = 0; i < 20; i++) axiosGetResponses.push(respond);
+}
+
+test('Routes - XML Exports enthalten Befehlstypen und Loxone-Sync-Lichter', async () => {
+    configManager.isConfigured = true;
     configManager.mapping = [
         { hue_uuid: 'uuid-color', hue_name: 'Farbe', loxone_name: 'farbe', hue_type: 'light', sync_lox: true },
+        { hue_uuid: 'uuid-ambiance', hue_name: 'Ambiance', loxone_name: 'ambiance', hue_type: 'light', sync_lox: false },
         { hue_uuid: 'uuid-white', hue_name: 'Weiss', loxone_name: 'weiss', hue_type: 'light', sync_lox: false },
-        { hue_uuid: 'uuid-room', hue_name: 'Raum', loxone_name: 'raum', hue_type: 'group', sync_lox: true }
+        { hue_uuid: 'uuid-plug', hue_name: 'Stecker', loxone_name: 'stecker', hue_type: 'light', sync_lox: false },
+        { hue_uuid: 'uuid-unknown', hue_name: 'Unbekannt', loxone_name: 'unbekannt', hue_type: 'light', sync_lox: false },
+        { hue_uuid: 'uuid-room', hue_name: 'Raum', loxone_name: 'raum', hue_type: 'group', sync_lox: true },
+        { hue_uuid: 'uuid-zone', hue_name: 'Zone', loxone_name: 'zone', hue_type: 'group', sync_lox: false },
+        { hue_uuid: 'pseudo-all', hue_name: 'Alle Lichter', loxone_name: 'all', hue_type: 'group', sync_lox: false }
     ];
-    const hueManager = require('../lib/hue');
-    const caps = hueManager.getLightCapabilities();
-    caps['uuid-white'] = { supportsColor: false, supportsCt: false };
+    mockHueResourcesForExport({
+        light: [
+            { id: 'uuid-color', owner: { rid: 'dev-color' }, on: {}, dimming: {}, color: {}, color_temperature: { mirek_schema: {} } },
+            { id: 'uuid-ambiance', owner: { rid: 'dev-ambiance' }, on: {}, dimming: {}, color_temperature: { mirek_schema: {} } },
+            { id: 'uuid-white', owner: { rid: 'dev-white' }, on: {}, dimming: {} },
+            { id: 'uuid-plug', owner: { rid: 'dev-plug' }, on: {} }
+        ],
+        room: [{ id: 'room-1', services: [{ rtype: 'grouped_light', rid: 'uuid-room' }], children: [{ rtype: 'device', rid: 'dev-ambiance' }, { rtype: 'device', rid: 'dev-white' }] }],
+        zone: [{ id: 'zone-1', services: [{ rtype: 'grouped_light', rid: 'uuid-zone' }], children: [{ rtype: 'light', rid: 'uuid-plug' }] }],
+        device: [
+            { id: 'dev-ambiance', services: [{ rtype: 'light', rid: 'uuid-ambiance' }] },
+            { id: 'dev-white', services: [{ rtype: 'light', rid: 'uuid-white' }] }
+        ]
+    });
 
     try {
         let outputsXml = '';
-        getRouteHandler('/api/download/outputs')({ query: {} }, { set() {}, send(c) { outputsXml = c; } });
-        assert.ok(outputsXml.includes('CmdOn="/farbe/&lt;v&gt;"'));
-        assert.ok(outputsXml.includes('CmdOn="/farbe/dim/&lt;v&gt;"'));
-        assert.ok(outputsXml.includes('CmdOn="/farbe/rgb/&lt;v&gt;"'));
-        assert.ok(outputsXml.includes('CmdOn="/farbe/ct/&lt;v&gt;"'));
-        assert.ok(outputsXml.includes('CmdOn="/weiss/dim/&lt;v&gt;"'));
-        assert.strictEqual(outputsXml.includes('/weiss/rgb/'), false);
-        assert.strictEqual(outputsXml.includes('/weiss/ct/'), false);
+        await getRouteHandler('/api/download/outputs')({ query: {} }, { set() {}, send(c) { outputsXml = c; } });
+        const pathsFor = name => [...outputsXml.matchAll(new RegExp(`CmdOn="/${name}/([^"]*)"`, 'g'))].map(m => m[1]);
+
+        // Genau ein Eintrag pro Lampe, passend zur Fähigkeit
+        assert.deepStrictEqual(pathsFor('farbe'), ['rgbw/&lt;v&gt;']);
+        assert.deepStrictEqual(pathsFor('ambiance'), ['ct/&lt;v&gt;']);
+        assert.deepStrictEqual(pathsFor('weiss'), ['dim/&lt;v&gt;']);
+        assert.deepStrictEqual(pathsFor('stecker'), ['switch/&lt;v&gt;']);
+        assert.ok(outputsXml.includes('Title="Farbe (Hue) RGBW"'));
+        // Unbekannte Fähigkeiten: alle Varianten als Fallback
+        assert.deepStrictEqual(pathsFor('unbekannt'), ['&lt;v&gt;', 'dim/&lt;v&gt;', 'rgbw/&lt;v&gt;', 'ct/&lt;v&gt;']);
+        // Gruppen vereinen die Fähigkeiten ihrer Lampen, Zonen auch mit direkten Lampen-Kindern
+        assert.deepStrictEqual(pathsFor('raum'), ['ct/&lt;v&gt;']);
+        assert.deepStrictEqual(pathsFor('zone'), ['switch/&lt;v&gt;']);
+        assert.deepStrictEqual(pathsFor('all'), ['rgbw/&lt;v&gt;']);
 
         let inputsXml = '';
         getRouteHandler('/api/download/inputs')({ query: {} }, { set() {}, send(c) { inputsXml = c; } });
@@ -616,7 +649,7 @@ test('Routes - XML Exports enthalten Befehlstypen und Loxone-Sync-Lichter', () =
         assert.strictEqual(inputsXml.includes('hue.raum.rgb'), false);
         assert.strictEqual(inputsXml.includes('hue.weiss.'), false);
     } finally {
-        delete caps['uuid-white'];
+        axiosGetResponses.length = 0;
     }
 });
 
