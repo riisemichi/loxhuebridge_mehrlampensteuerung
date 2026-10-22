@@ -472,7 +472,15 @@
         try {
             const s = await (await fetch('/api/settings')).json();
             multiLightControlSettings = s.multiLightControl || multiLightControlSettings;
+            showAppVersion(s.version);
         } catch(e) { console.error("Fehler bei loadMultiSyncSettingsCache:", e); }
+    }
+
+    function showAppVersion(version) {
+        const el = document.getElementById('appVersion');
+        if (!el || !version) return;
+        el.textContent = `v${version}`;
+        el.style.display = '';
     }
     
     function renderDropdown() {
@@ -917,6 +925,7 @@
         return {
             loxoneName: entry.loxone_name,
             original: {
+                loxone_name: entry.loxone_name,
                 sync_lox: entry.sync_lox === true,
                 ignore_dynamics: entry.ignore_dynamics === true,
                 multi_sync: entry.multi_sync === true,
@@ -928,6 +937,7 @@
                 repeat_command: entry.repeat_command === true
             },
             values: {
+                loxone_name: entry.loxone_name,
                 sync_lox: entry.sync_lox === true,
                 ignore_dynamics: entry.ignore_dynamics === true,
                 multi_sync: entry.multi_sync === true,
@@ -987,6 +997,12 @@
             if (statusEl) statusEl.textContent = '';
             return;
         }
+        if (key === 'loxone_name') {
+            detailsDraft.values.loxone_name = String(value || '').trim().toLowerCase();
+            const statusEl = document.getElementById('detailsSaveStatus');
+            if (statusEl) statusEl.textContent = '';
+            return;
+        }
         if (key === 'multi_sync_group') {
             detailsDraft.values.multi_sync_group = normalizeMultiSyncGroup(value);
             return;
@@ -1037,6 +1053,17 @@
             return;
         }
 
+        const oldName = detailsDraft.loxoneName;
+        const newName = detailsDraft.values.loxone_name;
+        if (!newName) {
+            if (statusEl) statusEl.textContent = 'Loxone Name darf nicht leer sein.';
+            return;
+        }
+        if (newName !== oldName && mappings.some(m => m.loxone_name === newName)) {
+            if (statusEl) statusEl.textContent = `Loxone Name "${newName}" ist bereits vergeben.`;
+            return;
+        }
+
         const body = { ...detailsDraft.values, sync_offset_ms: offset };
         if (statusEl) statusEl.textContent = 'Speichere...';
 
@@ -1047,13 +1074,18 @@
                 body: JSON.stringify(body)
             });
 
-            const index = mappings.findIndex(m => m.loxone_name === detailsDraft.loxoneName);
+            const index = mappings.findIndex(m => m.loxone_name === oldName);
             if (index >= 0) mappings[index] = payload.mapping;
+            const renamed = payload.mapping.loxone_name !== oldName;
+            if (renamed && status[oldName]) {
+                status[payload.mapping.loxone_name] = status[oldName];
+                delete status[oldName];
+            }
             renderMappings();
             if (currentTab === 'system') renderMultiSyncPreview();
             detailsDraft = null;
             closeModal('detailsModal');
-            showToast('Einstellungen gespeichert');
+            showToast(renamed ? 'Umbenannt und gespeichert' : 'Einstellungen gespeichert');
         } catch (error) {
             if (statusEl) statusEl.textContent = error.message;
         }
@@ -1074,6 +1106,17 @@
         const safeHex = safeHexColor(currentStatus.hex);
 
         let content = `<div style="margin-bottom:20px;">`;
+
+        // 0. NAME (für alle Geräte)
+        content += `
+            <div class="settings-card">
+                <label for="details_loxoneName" style="display:block; font-weight:500; margin-bottom:6px;">Loxone Name</label>
+                <input id="details_loxoneName" type="text" maxlength="64" value="${escapeHtml(detailsDraft.values.loxone_name)}" oninput="updateDetailsDraft('loxone_name', this.value)" style="width:100%; padding:8px; box-sizing:border-box;">
+                <div style="font-size:0.8rem; color:var(--text-muted); margin-top:6px;">
+                    Wird in der URL <span style="font-family:monospace">/&lt;name&gt;/&lt;wert&gt;</span> und in der UDP-Rückmeldung <span style="font-family:monospace">hue.&lt;name&gt;.*</span> verwendet. Nach dem Umbenennen müssen virtuelle Ausgänge/Eingänge in Loxone angepasst bzw. neu exportiert werden.
+                </div>
+            </div>
+        `;
 
         // 1. SETTINGS (nur für Lichter/Gruppen)
         if (entry.hue_type === 'light' || entry.hue_type === 'group') {

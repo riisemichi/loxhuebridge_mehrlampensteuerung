@@ -10,7 +10,7 @@ Sie ermöglicht eine extrem schnelle, lokale Steuerung ohne Cloud-Verzögerung u
 
 ---
 
-## 🚀 Features V2.5.13 Mehrlampensteuerung
+## 🚀 Features V2.5.14 Mehrlampensteuerung
 
 ### Neu in diesem Fork
 
@@ -25,6 +25,8 @@ Sie ermöglicht eine extrem schnelle, lokale Steuerung ohne Cloud-Verzögerung u
 * **Direkte Multi-Sync Effektziele:** loxHueBridge Gruppen können direkt per URL angesprochen werden, z. B. `/gruppe_a/candle`, `/group_b/fire` oder über den frei vergebenen Gruppennamen.
 * **Alles-Effekt:** `/all/candle`, `/alles/fire` und `/all/sunrise/30` verteilen Effekte auf alle einzeln gemappten Hue-Lampen.
 * **Einstellbarer EventStream Watchdog:** Der Neustart bei ausbleibenden Hue Events ist global einstellbar. Standard ist 10 Minuten, damit ruhige Installationen nicht alle 60-90 Sekunden neu verbinden.
+* **Loxone Name umbenennen:** In den Geräte-Details lässt sich der Loxone Name eines Eintrags ändern, ohne dass Einstellungen wie Multi-Sync-Gruppe, Ablauf-Cluster oder Sync-Offset verloren gehen. Danach die virtuellen Ausgänge/Eingänge in Loxone anpassen bzw. neu exportieren.
+* **Versionsanzeige im Kopfbereich:** Die installierte Version steht im Dashboard neben „Dashboard“, damit sofort sichtbar ist, ob der aktuelle Stand läuft.
 * **Sync-Offset pro Lampe:** Jede Lampe kann zeitlich feinjustiert werden.
     * negativer Offset = früher senden
     * positiver Offset = später senden
@@ -171,7 +173,7 @@ Dieses Repository verwendet zwei Branches:
 
 | Branch | Version | Zweck |
 | --- | --- | --- |
-| `main` | `2.5.13` | Stabiler Stand für den normalen Betrieb, inkl. Mehrlampengruppen, Ablauf-Clustern, Effekt-Fallback und Stabilitätskorrekturen |
+| `main` | `2.5.14` | Stabiler Stand für den normalen Betrieb, inkl. Mehrlampengruppen, Ablauf-Clustern, Effekt-Fallback und Stabilitätskorrekturen |
 | `develop` | `2.5.12-dev` | Weiterentwicklungsstand; künftige Änderungen werden zuerst hier getestet |
 
 Wenn kein Branch angegeben wird, wird normalerweise `main` installiert. Das ist die empfohlene Variante für den normalen Betrieb.
@@ -213,7 +215,7 @@ git pull --ff-only origin main
 docker compose up -d --build
 ```
 
-Danach zeigt **System** die Version `2.5.13` ohne `-dev` an.
+Danach zeigen der Kopfbereich des Dashboards und **System** die Version `2.5.14` ohne `-dev` an.
 
 ---
 

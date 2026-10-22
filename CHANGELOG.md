@@ -1,3 +1,11 @@
+## [2.5.14] - 2026-10-22
+### Neu
+- Loxone Name eines Eintrags ist in den Geräte-Details änderbar. Umbenennen und Einstellungen werden gemeinsam gespeichert, alle übrigen Einstellungen bleiben erhalten. Der aktuelle Status wird übernommen. Leere, doppelte und reservierte Namen (`all`, `alles`, `api`, Multi-Sync-Gruppenbefehle) sowie Leerzeichen und `/ ? # % . \` werden mit HTTP 400 abgelehnt. Virtuelle Ausgänge/Eingänge in Loxone müssen danach angepasst bzw. neu exportiert werden.
+- Installierte Version wird im Kopfbereich des Dashboards angezeigt, nicht mehr nur im Tab System.
+
+### Prüfungen
+- Tests für Umbenennen, Statusübernahme, abgelehnte Namen und unveränderte ältere Namen.
+
 ## [2.5.13] - 2026-10-22
 ### Neu
 - Explizite Loxone-Befehlstypen `/{name}/dim/<v>`, `/{name}/rgb/<v>`, `/{name}/ct/<v>` und `/{name}/switch/<v>`, auch für `all`/`alles`. Wie `/{name}/<v>` und `/{name}/sunrise/<s>` ohne Auth erreichbar.
