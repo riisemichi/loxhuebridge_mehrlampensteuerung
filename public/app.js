@@ -454,9 +454,14 @@
             </div>
             <div style="display:flex; align-items:center">
                 <div class="status-badges">${badges}</div>
-                <button class="del-btn" onclick="event.stopPropagation(); deleteMapping(${jsArg(m.loxone_name)})">✖</button>
+                <button class="del-btn" title="Löschen">✖</button>
             </div>
         `;
+        // Handler per DOM binden: verhindert, dass der Klick die Details der Zeile öffnet.
+        div.querySelector('.del-btn').addEventListener('click', event => {
+            event.stopPropagation();
+            deleteMapping(m.loxone_name);
+        });
         return div;
     }
 
@@ -554,14 +559,6 @@
     function safeHexColor(value, fallback = '#cccccc') {
         const text = String(value ?? '').trim();
         return /^#[0-9a-fA-F]{6}$/.test(text) ? text : fallback;
-    }
-
-    function jsArg(value) {
-        return JSON.stringify(String(value ?? ''))
-            .replace(/</g, '\\u003c')
-            .replace(/>/g, '\\u003e')
-            .replace(/&/g, '\\u0026')
-            .replace(/'/g, '\\u0027');
     }
 
     function safeNumber(value, fallback = '') {
@@ -1214,11 +1211,12 @@
     }
 
     function toggleSelectAll() { allSelected = !allSelected; document.querySelectorAll('.modal-checkbox').forEach(cb => cb.checked = allSelected); }
-    function doExport() {
+    function doExport(typeOverride) {
         const checked = document.querySelectorAll('.modal-checkbox:checked');
         if(checked.length === 0) return alert("Bitte wählen.");
         const names = Array.from(checked).map(cb => cb.value).join(',');
-        const type = currentTab === 'light' ? 'outputs' : 'inputs';
+        // Lichter: Standard = virtuelle Ausgänge; 'inputs' = UDP-Rückmeldungen der Lichter mit Loxone Sync
+        const type = typeOverride === 'inputs' ? 'inputs' : (currentTab === 'light' ? 'outputs' : 'inputs');
         window.location.href = `/api/download/${type}?names=${names}`;
         closeModal('exportModal');
     }
@@ -1249,7 +1247,12 @@
     }
     function updateTransLabel(val, id, unit) { document.getElementById(id).innerText = val + ' ' + unit; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-    function openExportModal() { document.getElementById('exportModal').style.display = 'flex'; loadExportList(); allSelected = false; }
+    function openExportModal() {
+        document.getElementById('exportModal').style.display = 'flex';
+        const inputsBtn = document.getElementById('exportInputsBtn');
+        if (inputsBtn) inputsBtn.style.display = currentTab === 'light' ? '' : 'none';
+        loadExportList(); allSelected = false;
+    }
     function loadExportList() {
         const list = document.getElementById('exportList');
         list.innerHTML = '';
