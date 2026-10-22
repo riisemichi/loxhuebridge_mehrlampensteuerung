@@ -1,3 +1,7 @@
+## [2.5.17] - 2026-10-22
+### Korrekturen
+- Dark Mode im Dashboard: Gruppenboxen der Mehrlampensynchronisierung, Timing-Test-Vorschau, Abschnittsüberschriften im Tab System, Status-Badges (An/Aus, Offen/Zu, Batterie, Typ, Fähigkeiten) und der Hover-Effekt der Mapping-Karten hatten fest kodierte helle Hintergründe und waren im Dark Mode kaum lesbar. Sie nutzen jetzt Theme-Variablen mit hellen und dunklen Werten.
+
 ## [2.5.16] - 2026-10-22
 ### Neu
 - Schalter **Anfragen protokollieren** im Tab System (oder `LOG_REQUESTS=true`): Jede eingehende Anfrage wird mit Methode, Pfad, HTTP-Status, Dauer und Absender ins Log geschrieben, Kategorie `HTTP` mit neuem Filter 🌐. Die Protokollierung sitzt vor dem Passwortschutz, daher erscheinen auch abgewiesene Anfragen (401, 400, 404). Dashboard-Abfragen (`/api/*`) und statische Dateien werden ausgelassen, Query-Strings nicht protokolliert.
