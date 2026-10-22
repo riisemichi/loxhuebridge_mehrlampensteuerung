@@ -17,6 +17,7 @@
         <div class="tab active" data-tab="light" onclick="setTab('light')">💡 Lichter</div>
         <div class="tab" data-tab="sensor" onclick="setTab('sensor')">📡 Sensoren</div>
         <div class="tab" data-tab="button" onclick="setTab('button')">🔘 Schalter</div>
+        <div class="tab" data-tab="scene" onclick="setTab('scene')">🎬 Szenen</div>
         <div class="tab" data-tab="system" onclick="setTab('system')">⚙️ System</div>
         <div class="tab" data-tab="diag" onclick="setTab('diag')">🩺 Diagnose</div>
     </div>
@@ -39,7 +40,16 @@
                         ℹ️ Tipp: Gib als Namen <b>'all'</b> ein und wähle im Dropdown <b>"🏠 Alle Lichter"</b>, um einen Globalbefehl anzulegen. Oder schicke einfach direkt <b>/all/&lt;v&gt;</b> ohne Mapping.
                     </p>
                     <div style="text-align: center; margin: 15px 0;">⬇</div>
-                    <label>Hue Gerät</label><select id="hueTarget"><option>Lade...</option></select>
+                    <div id="hueTargetRow">
+                        <label>Hue Gerät</label><select id="hueTarget"><option>Lade...</option></select>
+                    </div>
+                    <div id="sceneTargetRow" style="display:none">
+                        <label>Raum / Zone</label><select id="sceneGroup" onchange="renderSceneOptions()"><option>Lade...</option></select>
+                        <label>Szene</label><select id="sceneTarget"><option value="">-- Zuerst Raum/Zone wählen --</option></select>
+                        <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 5px;">
+                            Aufruf aus Loxone: <b>/&lt;name&gt;/1</b> ruft die Szene ab, <b>/&lt;name&gt;/0</b> schaltet den Raum bzw. die Zone aus.
+                        </p>
+                    </div>
                     <button class="add-btn" onclick="addMapping()">Speichern</button>
                 </div>
             </div>

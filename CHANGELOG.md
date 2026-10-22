@@ -1,3 +1,13 @@
+## [2.5.16] - 2026-10-22
+### Neu
+- Hue-Szenen aus Loxone abrufen: Neuer Tab **🎬 Szenen** mit Auswahl Raum/Zone und zugehöriger Szene. Die Szene wird mit eigenem Loxone Namen gespeichert (per Hue-ID, Teil von Backup/Restore). `/<name>/1` ruft die Szene ab (`recall: active`), `/<name>/0` schaltet den Raum bzw. die Zone aus. Beide Befehle laufen über den globalen Hue-Scheduler mit Bridge-Limit und 429-Backoff.
+- XML-Export `lox_scenes.xml` („LoxHueBridge Scenes“) mit einem digitalen virtuellen Ausgang pro Szene (`CmdOn` `/<name>/1`, `CmdOff` `/<name>/0`).
+- Testknöpfe ▶/⏹ pro Szene in der Liste, Umbenennen über die Geräte-Details.
+- Szenen lehnen Effekte, Sunrise und typisierte Pfade (`/dim/`, `/rgb/` …) mit HTTP 400 ab.
+
+### Prüfungen
+- Tests für Szenenliste pro Raum/Zone (inkl. Teilresultate), Abruf und Ausschalten, Hue `errors[]`, Szenen-Routen, XML-Export und Umbenennen.
+
 ## [2.5.15] - 2026-10-22
 ### Neu
 - Loxone-Befehlstyp `/{name}/rgbw/<v>` für den Loxone RGB/Lumitech-Aktor: `20BBBKKKK` wird als Weißton, jeder andere Wert als RGB gelesen. Reines Rot (`1..100`) wird damit als Farbe statt als Helligkeit gesendet. `0` schaltet aus.

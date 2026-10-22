@@ -726,3 +726,89 @@ test('Routes - unveränderter älterer Loxone Name bleibt gültig', () => {
     configManager.mapping = [entry];
     assert.strictEqual(routes._internals.parseLoxoneNameSetting(' Alter Name ', entry), 'alter name');
 });
+
+test('Routes - Szenen: /<name>/1 und /<name>/0 rufen executeScene auf, andere Werte nicht', async () => {
+    const hueManager = require('../lib/hue');
+    const originalExecuteScene = hueManager.executeScene;
+    const calls = [];
+    hueManager.executeScene = async (entry, value) => { calls.push([entry.loxone_name, value]); return true; };
+    configManager.isConfigured = true;
+    configManager.mapping = [
+        { hue_uuid: 'scene-1', hue_name: 'Büro: Lesen', loxone_name: 'buero_lesen', hue_type: 'scene', scene_group_rid: 'room-1', scene_group_rtype: 'room' }
+    ];
+
+    let statusCode = null;
+    let body = null;
+    const res = {
+        status(code) { statusCode = code; return this; },
+        send(content) { body = content; return this; }
+    };
+    try {
+        const valueHandler = getRouteHandler('/:name/:value');
+        await valueHandler({ params: { name: 'buero_lesen', value: '1' } }, res);
+        assert.strictEqual(statusCode, 200);
+        assert.strictEqual(body, 'OK Scene');
+        await valueHandler({ params: { name: 'buero_lesen', value: '0' } }, res);
+        assert.strictEqual(body, 'OK Scene Off');
+        assert.deepStrictEqual(calls, [['buero_lesen', '1'], ['buero_lesen', '0']]);
+
+        for (const value of ['candle', 'alert', 'abc', '-1']) {
+            statusCode = null;
+            await valueHandler({ params: { name: 'buero_lesen', value } }, res);
+            assert.strictEqual(statusCode, 400, value);
+        }
+
+        statusCode = null;
+        await getRouteHandler('/:name/:type/:value')({ params: { name: 'buero_lesen', type: 'dim', value: '50' } }, res, () => {});
+        assert.strictEqual(statusCode, 400);
+
+        statusCode = null;
+        await getRouteHandler('/:name/sunrise/:seconds')({ params: { name: 'buero_lesen', seconds: '30' } }, res);
+        assert.strictEqual(statusCode, 400);
+        assert.strictEqual(calls.length, 2);
+    } finally {
+        hueManager.executeScene = originalExecuteScene;
+    }
+});
+
+test('Routes - Szenen: XML Export erzeugt digitale Befehle und escaped Namen', () => {
+    configManager.mapping = [
+        { hue_uuid: 'scene-1', hue_name: 'Büro & "Lesen"', loxone_name: 'buero_lesen', hue_type: 'scene' },
+        { hue_uuid: 'light-1', hue_name: 'Lampe', loxone_name: 'lampe', hue_type: 'light' }
+    ];
+    let xml = '';
+    const headers = {};
+    getRouteHandler('/api/download/scenes')({ query: {} }, { set: (k, v) => { headers[k] = v; }, send: content => { xml = content; } });
+
+    assert.strictEqual(headers['Content-Disposition'], 'attachment; filename="lox_scenes.xml"');
+    assert.ok(xml.includes('<VirtualOut Title="LoxHueBridge Scenes"'));
+    assert.ok(xml.includes('CmdOn="/buero_lesen/1" CmdOff="/buero_lesen/0" Analog="false"'));
+    assert.ok(xml.includes('Comment="Büro &amp; &quot;Lesen&quot;"'));
+    assert.strictEqual(xml.includes('lampe'), false);
+});
+
+test('Routes - Szenen: /api/scenes antwortet ohne Setup mit 503', async () => {
+    configManager.isConfigured = false;
+    let statusCode = null;
+    let payload = null;
+    await getRouteHandler('/api/scenes')({}, {
+        status(code) { statusCode = code; return this; },
+        json(content) { payload = content; return this; }
+    });
+    assert.strictEqual(statusCode, 503);
+    assert.deepStrictEqual(payload, []);
+    configManager.isConfigured = true;
+});
+
+test('Routes - Szenen: Details speichern nur den Loxone Namen', () => {
+    configManager.mapping = [
+        { hue_uuid: 'scene-1', hue_name: 'Büro: Lesen', loxone_name: 'buero_lesen', hue_type: 'scene', scene_group_rid: 'room-1', scene_group_rtype: 'room' }
+    ];
+    let payload = null;
+    getRouteHandler('/api/mapping/:loxoneName/settings')({ params: { loxoneName: 'buero_lesen' }, body: { loxone_name: 'buero_lesen2', sync_lox: true } }, {
+        status() { return this; },
+        json(content) { payload = content; return this; }
+    });
+    assert.strictEqual(payload.success, true);
+    assert.deepStrictEqual(payload.mapping, { hue_uuid: 'scene-1', hue_name: 'Büro: Lesen', loxone_name: 'buero_lesen2', hue_type: 'scene', scene_group_rid: 'room-1', scene_group_rtype: 'room' });
+});

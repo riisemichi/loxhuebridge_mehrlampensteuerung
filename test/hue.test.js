@@ -1937,3 +1937,77 @@ test('Farbrückmeldung sendet rgb, kelvin und lumitech im Loxone-Format', () => 
         _internals.resetLightColorStateForTests();
     }
 });
+
+// --- Hue-Szenen ---
+test('Szene: getSceneTargets gruppiert Szenen nach Raum/Zone', async () => {
+    axiosGetResponses.length = 0;
+    configManager.config.bridgeIp = 'bridge';
+    axiosGetResponses.push(
+        { data: { data: [
+            { id: 'sc-2', metadata: { name: 'Lesen' }, group: { rid: 'room-1', rtype: 'room' } },
+            { id: 'sc-1', metadata: { name: 'Entspannen' }, group: { rid: 'room-1', rtype: 'room' } },
+            { id: 'sc-3', metadata: { name: 'Nacht' }, group: { rid: 'zone-1', rtype: 'zone' } },
+            { id: 'sc-x', metadata: { name: 'Verwaist' }, group: { rid: 'unbekannt', rtype: 'room' } }
+        ] } },
+        { data: { data: [{ id: 'room-1', metadata: { name: 'Büro' }, services: [{ rid: 'gl-1', rtype: 'grouped_light' }] }] } },
+        new Error('zone nicht abrufbar')
+    );
+
+    const groups = await hueManager.getSceneTargets();
+    assert.deepStrictEqual(groups, [{
+        id: 'room-1', rtype: 'room', name: 'Büro', groupedLightRid: 'gl-1',
+        scenes: [{ id: 'sc-1', name: 'Entspannen' }, { id: 'sc-2', name: 'Lesen' }]
+    }]);
+});
+
+test('Szene: Wert 1 ruft die Szene ab, Wert 0 schaltet den Raum aus', async () => {
+    axiosPutCalls.length = 0;
+    axiosGetCalls.length = 0;
+    axiosGetResponses.length = 0;
+    configManager.config.bridgeIp = 'bridge';
+    configManager.config.appKey = 'app-key';
+    configManager.config.transitionTime = 0;
+    hueManager.HUE_RESOURCE_DELAYS.grouped_light.delayMs = 0;
+    _internals.resetHueSchedulerForTests();
+    const entry = { loxone_name: 'buero_lesen', hue_type: 'scene', hue_uuid: 'sc-2', hue_name: 'Büro: Lesen', scene_group_rid: 'zone-9', scene_group_rtype: 'zone' };
+
+    assert.strictEqual(await hueManager.executeScene(entry, '1'), true);
+    assert.strictEqual(axiosPutCalls.length, 1);
+    assert.strictEqual(axiosPutCalls[0].url, 'https://bridge/clip/v2/resource/scene/sc-2');
+    assert.deepStrictEqual(axiosPutCalls[0].payload, { recall: { action: 'active' } });
+
+    axiosGetResponses.push({ data: { data: [{ id: 'zone-9', services: [{ rid: 'gl-9', rtype: 'grouped_light' }] }] } });
+    assert.strictEqual(await hueManager.executeScene(entry, '0'), true);
+    await wait(80);
+    assert.strictEqual(axiosGetCalls.at(-1).url, 'https://bridge/clip/v2/resource/zone/zone-9');
+    assert.strictEqual(axiosPutCalls.length, 2);
+    assert.strictEqual(axiosPutCalls[1].url, 'https://bridge/clip/v2/resource/grouped_light/gl-9');
+    assert.deepStrictEqual(axiosPutCalls[1].payload, { on: { on: false } });
+});
+
+test('Szene: Hue errors[] und fehlender Raum gelten als Fehler', async () => {
+    axiosPutCalls.length = 0;
+    axiosPutResponses.length = 0;
+    axiosGetResponses.length = 0;
+    configManager.config.bridgeIp = 'bridge';
+    _internals.resetHueSchedulerForTests();
+    const entry = { loxone_name: 'szene_kaputt', hue_type: 'scene', hue_uuid: 'sc-404', scene_group_rid: 'room-404', scene_group_rtype: 'room' };
+
+    axiosPutResponses.push({ data: { data: [], errors: [{ description: 'scene not found' }] } });
+    assert.strictEqual(await hueManager.executeScene(entry, '1'), false);
+
+    axiosGetResponses.push({ data: { data: [] } });
+    assert.strictEqual(await hueManager.executeScene(entry, '0'), false);
+    assert.strictEqual(axiosPutCalls.length, 1);
+});
+
+test('Szene: EventStream-Updates einer Szene erzeugen keinen Status', () => {
+    const originalMapping = configManager.mapping;
+    try {
+        configManager.mapping = [{ loxone_name: 'szene_status', hue_type: 'scene', hue_uuid: 'sc-ev' }];
+        _internals.processHueEvents([{ type: 'update', data: [{ id: 'sc-ev', on: { on: true } }] }]);
+        assert.strictEqual(configManager.statusCache.szene_status, undefined);
+    } finally {
+        configManager.mapping = originalMapping;
+    }
+});
