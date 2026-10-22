@@ -10,7 +10,7 @@ Sie ermöglicht eine extrem schnelle, lokale Steuerung ohne Cloud-Verzögerung u
 
 ---
 
-## 🚀 Features V2.5.14 Mehrlampensteuerung
+## 🚀 Features V2.5.15 Mehrlampensteuerung
 
 ### Neu in diesem Fork
 
@@ -65,7 +65,7 @@ Sie ermöglicht eine extrem schnelle, lokale Steuerung ohne Cloud-Verzögerung u
 * **SD-Card Mode:** Optional werden Logs nur im RAM gehalten. In diesem Modus wird keine `logs.db` geöffnet und kein SQLite-WAL geschrieben.
 * **Backup & Restore:** Lade deine komplette Konfiguration inkl. Mappings als Backup herunter und stelle sie bei Bedarf wieder her. Zusätzlich gibt es ein Backup ohne Zugangsdaten, bei dem Hue App-Key, MQTT-Passwort und Auth-Token maskiert werden.
 * **Loxone Integration:** Schalten, Dimmen, Warmweiß, RGB sowie Rückmeldungen via UDP.
-* **Explizite Befehlstypen:** `/{name}/dim/<v>`, `/{name}/rgb/<v>`, `/{name}/ct/<v>` und `/{name}/switch/<v>` legen fest, wie der Wert gelesen wird. Damit funktionieren reines Rot (`/{name}/rgb/100`) und 1 % Helligkeit (`/{name}/dim/1`).
+* **Explizite Befehlstypen:** `/{name}/dim/<v>`, `/{name}/rgb/<v>`, `/{name}/ct/<v>`, `/{name}/rgbw/<v>` und `/{name}/switch/<v>` legen fest, wie der Wert gelesen wird. Damit funktionieren reines Rot (`/{name}/rgb/100`) und 1 % Helligkeit (`/{name}/dim/1`).
 * **Farbrückmeldung im Loxone-Format:** Lichter mit Loxone Sync melden zusätzlich `hue.<name>.rgb` (R + G*1000 + B*1000000) und im Weißton-Modus `hue.<name>.kelvin` und `hue.<name>.lumitech` (`20BBBKKKK`).
 * **MQTT Support:** Sendet Statusänderungen parallel an einen MQTT Broker.
 * **Stabilität:** Watchdog, Queue und Rate-Limiting verhindern Überlastung der Bridge.
@@ -173,7 +173,7 @@ Dieses Repository verwendet zwei Branches:
 
 | Branch | Version | Zweck |
 | --- | --- | --- |
-| `main` | `2.5.14` | Stabiler Stand für den normalen Betrieb, inkl. Mehrlampengruppen, Ablauf-Clustern, Effekt-Fallback und Stabilitätskorrekturen |
+| `main` | `2.5.15` | Stabiler Stand für den normalen Betrieb, inkl. Mehrlampengruppen, Ablauf-Clustern, Effekt-Fallback und Stabilitätskorrekturen |
 | `develop` | `2.5.12-dev` | Weiterentwicklungsstand; künftige Änderungen werden zuerst hier getestet |
 
 Wenn kein Branch angegeben wird, wird normalerweise `main` installiert. Das ist die empfohlene Variante für den normalen Betrieb.
@@ -215,7 +215,7 @@ git pull --ff-only origin main
 docker compose up -d --build
 ```
 
-Danach zeigen der Kopfbereich des Dashboards und **System** die Version `2.5.14` ohne `-dev` an.
+Danach zeigen der Kopfbereich des Dashboards und **System** die Version `2.5.15` ohne `-dev` an.
 
 ---
 
@@ -579,8 +579,20 @@ Adresse: `http://<IP-DER-BRIDGE>:8555`
 | **Dimmen (explizit)** | `/kueche/dim/<v>` | 0 = Aus, 1-100 % (auch 1 %) |
 | **Warmweiß (explizit)** | `/kueche/ct/<v>` | `20BBBKKKK`, 0 = Aus |
 | **RGB (explizit)** | `/kueche/rgb/<v>` | R + G*1000 + B*1000000, auch reines Rot `1..100` |
+| **RGB + Weißton (explizit)** | `/kueche/rgbw/<v>` | Für den Loxone RGB/Lumitech-Aktor: `20BBBKKKK` = Weißton, alles andere RGB (auch reines Rot `1..100`), 0 = Aus |
 
-Der Pfad `/kueche/<v>` rät den Typ aus dem Zahlenbereich: `1` schaltet nur ein, `2..100` ist Helligkeit, `20BBBKKKK` ist Warmweiß, alles andere RGB. Reines Rot (`R` ohne `G` und `B`, also `1..100`) und 1 % Helligkeit sind darüber nicht möglich. Dafür die expliziten Pfade verwenden. Der XML-Export erzeugt pro Licht den bisherigen Befehl sowie `Dim`, `RGB` (bei Farblampen) und `CT` (bei Lampen mit Farbtemperatur).
+Der Pfad `/kueche/<v>` rät den Typ aus dem Zahlenbereich: `1` schaltet nur ein, `2..100` ist Helligkeit, `20BBBKKKK` ist Warmweiß, alles andere RGB. Reines Rot (`R` ohne `G` und `B`, also `1..100`) und 1 % Helligkeit sind darüber nicht möglich. Dafür die expliziten Pfade verwenden.
+
+Der XML-Export erzeugt pro Licht genau einen Befehl, passend zu den Fähigkeiten der Lampe:
+
+| Lampe | Exportierter Befehl | Loxone-Aktor |
+| --- | --- | --- |
+| Farbe + Weißton | `RGBW` (`/kueche/rgbw/<v>`) | RGB/Lumitech |
+| Nur Weißton | `CT` (`/kueche/ct/<v>`) | Lumitech |
+| Nur dimmbar | `Dim` (`/kueche/dim/<v>`) | Dimmer |
+| Nur Ein/Aus | `Switch` (`/kueche/switch/<v>`) | Schalter |
+
+Räume, Zonen und „Alle Lichter“ erhalten den Befehl, der alle enthaltenen Lampen abdeckt. Sind die Fähigkeiten nicht ermittelbar (Bridge nicht erreichbar), enthält der Export alle Varianten inklusive `/kueche/<v>`. Bestehende virtuelle Ausgänge mit `/kueche/<v>` funktionieren unverändert weiter.
 
 Warmweiß-Werte werden strikt als `20BBBKKKK` validiert: `BBB` ist die Helligkeit `000..100`, `KKKK` ist Kelvin `2000..6500`. Beispiel `201002700` bedeutet 100 % bei 2700 K. Ungültige Werte werden mit HTTP 400 abgelehnt.
 

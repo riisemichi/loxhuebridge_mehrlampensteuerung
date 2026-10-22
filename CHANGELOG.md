@@ -1,3 +1,14 @@
+## [2.5.15] - 2026-10-22
+### Neu
+- Loxone-Befehlstyp `/{name}/rgbw/<v>` für den Loxone RGB/Lumitech-Aktor: `20BBBKKKK` wird als Weißton, jeder andere Wert als RGB gelesen. Reines Rot (`1..100`) wird damit als Farbe statt als Helligkeit gesendet. `0` schaltet aus.
+- XML-Export der virtuellen Ausgänge erzeugt pro Licht genau einen Befehl passend zur Lampe: `RGBW` (Farbe), `CT` (nur Weißton), `Dim` (nur dimmbar) oder `Switch` (nur Ein/Aus). Räume, Zonen und „Alle Lichter“ erhalten den Befehl, der alle enthaltenen Lampen abdeckt. Nur wenn die Fähigkeiten unbekannt sind, werden weiterhin alle Varianten exportiert. Der Export lädt die Lampenfähigkeiten vorher neu von der Bridge.
+
+### Korrekturen
+- Zonen lösen auch Lampen auf, die in Hue API V2 direkt als Kind (`rtype: light`) statt über das Gerät eingetragen sind. Betrifft Export und Effekt-Fallback.
+
+### Prüfungen
+- Tests für `rgbw`, den Export pro Lampenfähigkeit, kombinierte Gruppenfähigkeiten und Zonen mit direkten Lampen-Kindern.
+
 ## [2.5.14] - 2026-10-22
 ### Neu
 - Loxone Name eines Eintrags ist in den Geräte-Details änderbar. Umbenennen und Einstellungen werden gemeinsam gespeichert, alle übrigen Einstellungen bleiben erhalten. Der aktuelle Status wird übernommen. Leere, doppelte und reservierte Namen (`all`, `alles`, `api`, Multi-Sync-Gruppenbefehle) sowie Leerzeichen und `/ ? # % . \` werden mit HTTP 400 abgelehnt. Virtuelle Ausgänge/Eingänge in Loxone müssen danach angepasst bzw. neu exportiert werden.
