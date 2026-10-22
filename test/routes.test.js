@@ -619,3 +619,77 @@ test('Routes - XML Exports enthalten Befehlstypen und Loxone-Sync-Lichter', () =
         delete caps['uuid-white'];
     }
 });
+
+function renameMappingRequest(loxoneName, newName) {
+    const handler = getRouteHandler('/api/mapping/:loxoneName/settings');
+    const result = { statusCode: 200, payload: null };
+    const res = {
+        status(code) { result.statusCode = code; return this; },
+        json(content) { result.payload = content; return this; }
+    };
+    handler({
+        params: { loxoneName },
+        body: {
+            sync_lox: true,
+            ignore_dynamics: false,
+            multi_sync: true,
+            multi_sync_group: 'b',
+            sync_cluster: 'Decke',
+            sync_offset_ms: 30,
+            ...(newName === undefined ? {} : { loxone_name: newName })
+        }
+    }, res);
+    return result;
+}
+
+function setupRenameMappings() {
+    configManager.mapping = [
+        { loxone_name: 'kueche', hue_uuid: 'uuid-kueche', hue_name: 'Hue Küche', hue_type: 'light', sync_offset_ms: 0 },
+        { loxone_name: 'flur', hue_uuid: 'uuid-flur', hue_name: 'Hue Flur', hue_type: 'light', sync_offset_ms: 0 }
+    ];
+    configManager.statusCache = { kueche: { on: 1, bri: 40 } };
+    configManager.detectedItems = [{ type: 'command', name: 'kueche_neu', id: 'cmd_kueche_neu' }];
+}
+
+test('Routes - Mapping Settings benennt Loxone Namen um und behält Einstellungen', () => {
+    setupRenameMappings();
+    const { statusCode, payload } = renameMappingRequest('kueche', '  Kueche_Neu ');
+
+    assert.strictEqual(statusCode, 200);
+    assert.strictEqual(payload.success, true);
+    assert.strictEqual(payload.mapping.loxone_name, 'kueche_neu');
+    const entry = configManager.mapping.find(m => m.hue_uuid === 'uuid-kueche');
+    assert.strictEqual(entry.loxone_name, 'kueche_neu');
+    assert.strictEqual(entry.hue_name, 'Hue Küche');
+    assert.strictEqual(entry.multi_sync_group, 'b');
+    assert.strictEqual(entry.sync_cluster, 'Decke');
+    assert.strictEqual(entry.sync_offset_ms, 30);
+    assert.deepStrictEqual(configManager.statusCache.kueche_neu, { on: 1, bri: 40 });
+    assert.strictEqual(configManager.statusCache.kueche, undefined);
+    assert.strictEqual(configManager.detectedItems.length, 0);
+});
+
+test('Routes - Mapping Settings lehnt doppelte, reservierte und ungültige Loxone Namen ab', () => {
+    for (const name of ['flur', 'all', 'Alles', 'api', 'gruppe_a', 'group_b', 'a/b', 'a b', 'a.b', '', '   ', 'x'.repeat(65), 42]) {
+        setupRenameMappings();
+        const { statusCode, payload } = renameMappingRequest('kueche', name);
+        assert.strictEqual(statusCode, 400, `Name ${JSON.stringify(name)}`);
+        assert.strictEqual(payload.success, false);
+        assert.strictEqual(configManager.mapping[0].loxone_name, 'kueche');
+        assert.strictEqual(configManager.mapping[0].multi_sync_group, undefined);
+    }
+});
+
+test('Routes - Mapping Settings ohne loxone_name behält den Namen', () => {
+    setupRenameMappings();
+    const { statusCode, payload } = renameMappingRequest('kueche');
+    assert.strictEqual(statusCode, 200);
+    assert.strictEqual(payload.mapping.loxone_name, 'kueche');
+    assert.deepStrictEqual(configManager.statusCache.kueche, { on: 1, bri: 40 });
+});
+
+test('Routes - unveränderter älterer Loxone Name bleibt gültig', () => {
+    const entry = { loxone_name: 'alter name' };
+    configManager.mapping = [entry];
+    assert.strictEqual(routes._internals.parseLoxoneNameSetting(' Alter Name ', entry), 'alter name');
+});

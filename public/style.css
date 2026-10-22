@@ -44,6 +44,8 @@ h1 {
     margin-bottom: 5px; 
 }
 
+.app-version { font-family: 'Fira Code', monospace; font-size: 0.75rem; margin-left: 6px; vertical-align: middle; }
+
 /* --- TABS --- */
 .tabs { 
     display: flex; 
