@@ -454,9 +454,14 @@
             </div>
             <div style="display:flex; align-items:center">
                 <div class="status-badges">${badges}</div>
-                <button class="del-btn" onclick="event.stopPropagation(); deleteMapping(${jsArg(m.loxone_name)})">✖</button>
+                <button class="del-btn" title="Löschen">✖</button>
             </div>
         `;
+        // Handler per DOM binden: verhindert, dass der Klick die Details der Zeile öffnet.
+        div.querySelector('.del-btn').addEventListener('click', event => {
+            event.stopPropagation();
+            deleteMapping(m.loxone_name);
+        });
         return div;
     }
 
@@ -554,14 +559,6 @@
     function safeHexColor(value, fallback = '#cccccc') {
         const text = String(value ?? '').trim();
         return /^#[0-9a-fA-F]{6}$/.test(text) ? text : fallback;
-    }
-
-    function jsArg(value) {
-        return JSON.stringify(String(value ?? ''))
-            .replace(/</g, '\\u003c')
-            .replace(/>/g, '\\u003e')
-            .replace(/&/g, '\\u0026')
-            .replace(/'/g, '\\u0027');
     }
 
     function safeNumber(value, fallback = '') {
