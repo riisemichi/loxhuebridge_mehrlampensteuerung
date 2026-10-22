@@ -20,7 +20,7 @@ node --check lib/hue.js                     # syntax check, as the README does
 docker compose up -d --build                # local container (host networking, ./data mounted as DATA_DIR)
 ```
 
-CI (`.github/workflows/test.yml`) runs `npm test` and `npm audit --omit=dev --audit-level=moderate` on Ubuntu **and Windows**. Tests must stay platform-neutral: no Unix-only signals (the shutdown test sends SIGTERM over IPC) and no reliance on fsync of directories. Pushing a tag triggers `docker-publish.yml`. Tags that contain `-` (e.g. `2.5.12-dev`) never get the `latest` image.
+CI (`.github/workflows/test.yml`) runs `npm test` and `npm audit --omit=dev --audit-level=moderate` on Ubuntu only. Pushing a tag triggers `docker-publish.yml`. Tags that contain `-` (e.g. `2.5.12-dev`) never get the `latest` image.
 
 The root-level `test_*.js`, `scratch.js` and `tools/manual/` scripts are old scratch and manual diagnostics, not part of `npm test`. `tools/manual/*` must only run when given an explicit target address.
 
