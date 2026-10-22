@@ -5,6 +5,7 @@
 
 ### Korrekturen
 - RGB-Farben behalten beim Dimmen ihren Farbton. Loxone dimmt RGB durch Skalieren aller Komponenten; die Farbe wird jetzt vor der Umrechnung auf volle Helligkeit normiert, damit die Gammakurve Mischfarben wie Orange bei niedriger Helligkeit nicht ins Rötliche verschiebt. Die Helligkeit wird unverändert über `dimming` gesendet.
+- Globaler Mindestabstand zwischen Hue-PUTs wird auch bei direkten PUTs mit 429-Retry exakt eingehalten. Der Startzeitpunkt wird jetzt erst beim tatsächlichen Aufruf gemessen; ein Millisekundenwechsel nach der Slot-Vergabe konnte den nächsten PUT 1 ms zu früh starten (Test „F01: Jeder echte PUT und Retry verbraucht das globale Budget“ schlug sporadisch fehl).
 - Zonen lösen auch Lampen auf, die in Hue API V2 direkt als Kind (`rtype: light`) statt über das Gerät eingetragen sind. Betrifft Export und Effekt-Fallback.
 
 ### Prüfungen
