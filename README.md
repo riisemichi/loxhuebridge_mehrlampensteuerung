@@ -10,7 +10,7 @@ Sie ermöglicht eine extrem schnelle, lokale Steuerung ohne Cloud-Verzögerung u
 
 ---
 
-## 🚀 Features V2.5.15 Mehrlampensteuerung
+## 🚀 Features V2.5.16 Mehrlampensteuerung
 
 ### Neu in diesem Fork
 
@@ -62,6 +62,7 @@ Sie ermöglicht eine extrem schnelle, lokale Steuerung ohne Cloud-Verzögerung u
 * **Smart Mapping:** Einfache Zuordnung per „Klick & Wähl" mit automatischer Duplikatsfilterung bei erkannten Befehlen.
 * **Erweiterter Diagnose-Tab:** Zeigt Gerätestatus, Zigbee-Konnektivität pro Gerät und eine vollständige Übersicht aller Lampen-Fähigkeiten.
 * **Persistent Logging (SQLite):** Logs bleiben nach Neustarts erhalten und sind durchsuchbar.
+* **Anfragen protokollieren:** Optional schreibt loxHueBridge jede eingehende Anfrage (z. B. Loxone-Befehle) mit Pfad, HTTP-Status, Dauer und Absender ins Log (Filter 🌐). Auch abgewiesene Anfragen wie 401 oder 400 erscheinen. Schalter im Tab **System**, alternativ `LOG_REQUESTS=true`.
 * **SD-Card Mode:** Optional werden Logs nur im RAM gehalten. In diesem Modus wird keine `logs.db` geöffnet und kein SQLite-WAL geschrieben.
 * **Backup & Restore:** Lade deine komplette Konfiguration inkl. Mappings als Backup herunter und stelle sie bei Bedarf wieder her. Zusätzlich gibt es ein Backup ohne Zugangsdaten, bei dem Hue App-Key, MQTT-Passwort und Auth-Token maskiert werden.
 * **Loxone Integration:** Schalten, Dimmen, Warmweiß, RGB sowie Rückmeldungen via UDP.
@@ -173,7 +174,7 @@ Dieses Repository verwendet zwei Branches:
 
 | Branch | Version | Zweck |
 | --- | --- | --- |
-| `main` | `2.5.15` | Stabiler Stand für den normalen Betrieb, inkl. Mehrlampengruppen, Ablauf-Clustern, Effekt-Fallback und Stabilitätskorrekturen |
+| `main` | `2.5.16` | Stabiler Stand für den normalen Betrieb, inkl. Mehrlampengruppen, Ablauf-Clustern, Effekt-Fallback und Stabilitätskorrekturen |
 | `develop` | `2.5.12-dev` | Weiterentwicklungsstand; künftige Änderungen werden zuerst hier getestet |
 
 Wenn kein Branch angegeben wird, wird normalerweise `main` installiert. Das ist die empfohlene Variante für den normalen Betrieb.
@@ -215,7 +216,7 @@ git pull --ff-only origin main
 docker compose up -d --build
 ```
 
-Danach zeigen der Kopfbereich des Dashboards und **System** die Version `2.5.15` ohne `-dev` an.
+Danach zeigen der Kopfbereich des Dashboards und **System** die Version `2.5.16` ohne `-dev` an.
 
 ---
 
@@ -283,6 +284,7 @@ HUE_APP_KEY=dein-hue-app-key
 LOXONE_IP=192.168.1.20
 LOXONE_UDP_PORT=7000
 DEBUG=false
+LOG_REQUESTS=false
 HTTP_PORT=8555
 LOXHUE_AUTH_TOKEN=
 ```
@@ -300,7 +302,7 @@ Neues Passwort: ********
 Passwort wiederholen: ********
 ```
 
-Das Passwort wird nicht im Klartext gespeichert, sondern als Hash in `config.json`. Loxone-Steuer-URLs wie `/wohnzimmer/50`, `/wohnzimmer/rgb/100` oder `/wohnzimmer/sunrise/30` bleiben bewusst ohne Auth erreichbar, damit bestehende virtuelle Ausgänge in Loxone weiter funktionieren.
+Das Passwort wird nicht im Klartext gespeichert, sondern als Hash in `config.json`. Loxone-Steuer-URLs wie `/wohnzimmer/50`, `/wohnzimmer/rgb/100`, `/wohnzimmer/rgbw/100` oder `/wohnzimmer/sunrise/30` bleiben bewusst ohne Auth erreichbar, damit bestehende virtuelle Ausgänge in Loxone weiter funktionieren.
 
 Die Passwortprüfung läuft asynchron mit höchstens zwei parallelen Berechnungen. Erfolgreiche Prüfungen werden höchstens 60 Sekunden in einem begrenzten Cache wiederverwendet; geänderte Zugangsdaten machen alte Berechtigungen ungültig. Nach zehn fehlgeschlagenen Versuchen innerhalb einer Minute wird die betreffende Quelladresse vorübergehend mit HTTP 429 gebremst. Diese HTTP-429-Antwort des Dashboards ist vom Hue-Rate-Limit im Lichtlog zu unterscheiden. Loxone-Steuerpfade bleiben davon ausgenommen.
 
@@ -645,6 +647,8 @@ Logs prüfen:
 ```bash
 docker logs -f loxhuebridge
 ```
+
+Kommt ein Loxone-Befehl scheinbar nicht an, im Tab **System** **Anfragen protokollieren** aktivieren und im Log den Filter 🌐 wählen. Jede Anfrage erscheint dort mit Status, z. B. `HTTP GET /kueche/rgbw/50 -> 200 (12 ms, von 192.168.1.20)`. `401` bedeutet Passwortschutz, `400` einen ungültigen Wert, keine Zeile heißt, dass die Anfrage loxHueBridge nicht erreicht (Adresse/Port im virtuellen Ausgang prüfen).
 
 Bei erfolgreichem SSE-Fix sollten die bisherigen EventStream-JSON-Fehler nicht mehr auftreten.
 

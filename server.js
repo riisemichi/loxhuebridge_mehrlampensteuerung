@@ -10,6 +10,7 @@ const hueManager = require('./lib/hue');
 const loxoneManager = require('./lib/loxone');
 const routes = require('./lib/routes');
 const auth = require('./lib/auth');
+const { requestLogger } = require('./lib/requestlog');
 const lifecycle = require('./lib/lifecycle');
 
 console.log("🚀 [BOOT] loxHueBridge Prozess gestartet...");
@@ -51,6 +52,7 @@ if (configManager.isConfigured) {
 }
 
 const app = express();
+app.use(requestLogger);
 app.use(express.json({ limit: '10mb' }));
 app.use(auth.requireAuth);
 
