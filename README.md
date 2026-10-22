@@ -10,7 +10,7 @@ Sie ermöglicht eine extrem schnelle, lokale Steuerung ohne Cloud-Verzögerung u
 
 ---
 
-## 🚀 Features V2.5.16 Mehrlampensteuerung
+## 🚀 Features V2.5.17 Mehrlampensteuerung
 
 ### Neu in diesem Fork
 
@@ -174,7 +174,7 @@ Dieses Repository verwendet zwei Branches:
 
 | Branch | Version | Zweck |
 | --- | --- | --- |
-| `main` | `2.5.16` | Stabiler Stand für den normalen Betrieb, inkl. Mehrlampengruppen, Ablauf-Clustern, Effekt-Fallback und Stabilitätskorrekturen |
+| `main` | `2.5.17` | Stabiler Stand für den normalen Betrieb, inkl. Mehrlampengruppen, Ablauf-Clustern, Effekt-Fallback und Stabilitätskorrekturen |
 | `develop` | `2.5.12-dev` | Weiterentwicklungsstand; künftige Änderungen werden zuerst hier getestet |
 
 Wenn kein Branch angegeben wird, wird normalerweise `main` installiert. Das ist die empfohlene Variante für den normalen Betrieb.
@@ -216,7 +216,7 @@ git pull --ff-only origin main
 docker compose up -d --build
 ```
 
-Danach zeigen der Kopfbereich des Dashboards und **System** die Version `2.5.16` ohne `-dev` an.
+Danach zeigen der Kopfbereich des Dashboards und **System** die Version `2.5.17` ohne `-dev` an.
 
 ---
 
