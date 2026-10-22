@@ -786,13 +786,14 @@
         d.multiGroups = MULTI_SYNC_GROUP_IDS.map(id => getMultiSyncFormSettings(id));
 
         d.debug = document.getElementById('sys_debug').checked;
+        d.logRequests = document.getElementById('sys_logRequests').checked;
         d.mqttEnabled = document.getElementById('sys_mqttEnabled').checked;
         d.mqttPassClear = document.getElementById('sys_mqttPassClear')?.checked === true;
         d.disableLogDisk = document.getElementById('sys_disableLogDisk').checked;
 
         try {
             await apiRequest('/api/setup/loxone', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({
-                loxoneIp: d.loxIp, loxonePort: d.loxPort, debug: d.debug,
+                loxoneIp: d.loxIp, loxonePort: d.loxPort, debug: d.debug, logRequests: d.logRequests,
                 transitionTime: d.transitionTime, throttleTime: d.throttleTime, eventStreamWatchdogTimeoutSeconds: d.eventStreamWatchdogTimeoutSeconds,
                 mqttEnabled: d.mqttEnabled, mqttBroker: d.mqttBroker, mqttPort: d.mqttPort, mqttUser: d.mqttUser, mqttPass: d.mqttPass, mqttPassClear: d.mqttPassClear, mqttPrefix: d.mqttPrefix,
                 disableLogDisk: d.disableLogDisk,
@@ -897,6 +898,7 @@
                 -->
 
                 <tr><td>${infoLabel('Debug Modus', 'Schreibt detaillierte IN/OUT/Event-Logs. Hilfreich zum Testen, im Dauerbetrieb bei vielen Befehlen eher deaktivieren.')}</td><td><input type="checkbox" id="sys_debug" ${s.debug?'checked':''}></td></tr>
+                <tr><td>${infoLabel('Anfragen protokollieren', 'Schreibt jede eingehende Anfrage (z. B. Loxone-Befehle) mit Pfad, HTTP-Status, Dauer und Absender ins Log, Kategorie 🌐. Auch abgewiesene Anfragen (401, 400, 404) erscheinen. Dashboard-Abfragen (/api/*) und statische Dateien werden nicht protokolliert.')}</td><td><input type="checkbox" id="sys_logRequests" ${s.logRequests?'checked':''}></td></tr>
                 <tr>
                     <td>${infoLabel('SD-Card Mode', 'Deaktiviert Schreibzugriffe auf logs.db und hält Logs nur im RAM. Sinnvoll auf SD-Karten-Systemen.')}</td>
                     <td>

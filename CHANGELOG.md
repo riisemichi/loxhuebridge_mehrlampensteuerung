@@ -1,3 +1,13 @@
+## [2.5.16] - 2026-10-22
+### Neu
+- Schalter **Anfragen protokollieren** im Tab System (oder `LOG_REQUESTS=true`): Jede eingehende Anfrage wird mit Methode, Pfad, HTTP-Status, Dauer und Absender ins Log geschrieben, Kategorie `HTTP` mit neuem Filter 🌐. Die Protokollierung sitzt vor dem Passwortschutz, daher erscheinen auch abgewiesene Anfragen (401, 400, 404). Dashboard-Abfragen (`/api/*`) und statische Dateien werden ausgelassen, Query-Strings nicht protokolliert.
+
+### Korrekturen
+- `/{name}/rgbw/<v>` ist bei aktivem Passwortschutz wieder ohne Login erreichbar. Die Ausnahmeliste in `auth.js` kannte `rgbw` nicht, Loxone erhielt HTTP 401. Router und Passwortschutz nutzen jetzt dieselbe Liste der Befehlstypen (`lib/commands.js`).
+
+### Prüfungen
+- Test, dass jeder explizite Befehlstyp ohne Login erreichbar ist, und Tests für die Anfrage-Protokollierung.
+
 ## [2.5.15] - 2026-10-22
 ### Neu
 - Loxone-Befehlstyp `/{name}/rgbw/<v>` für den Loxone RGB/Lumitech-Aktor: `20BBBKKKK` wird als Weißton, jeder andere Wert als RGB gelesen. Reines Rot (`1..100`) wird damit als Farbe statt als Helligkeit gesendet. `0` schaltet aus.
