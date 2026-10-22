@@ -82,6 +82,10 @@ test('Auth nimmt Setup vor Erstkonfiguration und Loxone-Steuer-URLs aus', () => 
     assert.strictEqual(auth._internals.needsAuth(req('/wohnzimmer/50')), false);
     assert.strictEqual(auth._internals.needsAuth(req('/wohnzimmer/sunrise/30')), false);
     assert.strictEqual(auth._internals.needsAuth(req('/wohnzimmer/rgb/100')), false);
+    // Jeder explizite Befehlstyp muss ohne Login erreichbar sein (sonst 401 für Loxone)
+    for (const type of require('../lib/commands').LOXONE_COMMAND_TYPES) {
+        assert.strictEqual(auth._internals.needsAuth(req(`/wohnzimmer/${type}/50`)), false, `${type} verlangt Login`);
+    }
     assert.strictEqual(auth._internals.needsAuth(req('/wohnzimmer/dim/1')), false);
     assert.strictEqual(auth._internals.needsAuth(req('/api/dim/1')), true);
     assert.strictEqual(auth._internals.needsAuth(req('/wohnzimmer/foo/1')), true);
