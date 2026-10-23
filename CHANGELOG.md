@@ -1,3 +1,13 @@
+## [2.5.18] - 2026-10-23
+### Neu
+- Hue-Szenen aus Loxone abrufen: Neuer Tab **🎬 Szenen** mit Auswahl Raum/Zone und zugehöriger Szene. Die Szene wird mit eigenem Loxone Namen gespeichert (per Hue-ID, Teil von Backup/Restore). `/<name>/1` ruft die Szene ab (`recall: active`), `/<name>/0` schaltet den Raum bzw. die Zone aus. Beide Befehle laufen über den globalen Hue-Scheduler mit Bridge-Limit und 429-Backoff.
+- XML-Export `lox_scenes.xml` („LoxHueBridge Scenes“) mit einem digitalen virtuellen Ausgang pro Szene (`CmdOn` `/<name>/1`, `CmdOff` `/<name>/0`).
+- Testknöpfe ▶/⏹ pro Szene in der Liste, Umbenennen über die Geräte-Details.
+- Szenen lehnen Effekte, Sunrise und typisierte Pfade (`/dim/`, `/rgb/` …) mit HTTP 400 ab.
+
+### Prüfungen
+- Tests für Szenenliste pro Raum/Zone (inkl. Teilresultate), Abruf und Ausschalten, Hue `errors[]`, Szenen-Routen, XML-Export und Umbenennen.
+
 ## [2.5.17] - 2026-10-22
 ### Korrekturen
 - Dark Mode im Dashboard: Gruppenboxen der Mehrlampensynchronisierung, Timing-Test-Vorschau, Abschnittsüberschriften im Tab System, Status-Badges (An/Aus, Offen/Zu, Batterie, Typ, Fähigkeiten) und der Hover-Effekt der Mapping-Karten hatten fest kodierte helle Hintergründe und waren im Dark Mode kaum lesbar. Sie nutzen jetzt Theme-Variablen mit hellen und dunklen Werten.

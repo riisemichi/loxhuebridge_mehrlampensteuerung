@@ -1,5 +1,6 @@
 ﻿let currentTab = 'light';
     let targets = [];
+    let sceneTargets = [];
     let mappings = [];
     let status = {};
     let detectedHistory = [];
@@ -34,6 +35,10 @@
         document.querySelector(`.tab[data-tab="${tab}"]`).classList.add('active');
         const hint = document.getElementById('hintAll');
         if(hint) hint.style.display = tab === 'light' ? 'block' : 'none';
+        const hueTargetRow = document.getElementById('hueTargetRow');
+        const sceneTargetRow = document.getElementById('sceneTargetRow');
+        if (hueTargetRow) hueTargetRow.style.display = tab === 'scene' ? 'none' : '';
+        if (sceneTargetRow) sceneTargetRow.style.display = tab === 'scene' ? '' : 'none';
 
         document.getElementById('main-interface').classList.remove('active');
         document.getElementById('system-interface').classList.remove('active');
@@ -51,6 +56,7 @@
             loadDiagnostics();
         } else {
             document.getElementById('main-interface').classList.add('active');
+            if (tab === 'scene') loadSceneTargets();
             renderDropdown(); 
             renderMappings();
         }
@@ -356,6 +362,7 @@
             if (currentTab === 'light') return m.hue_type === 'light' || m.hue_type === 'group';
             if (currentTab === 'sensor') return m.hue_type === 'sensor';
             if (currentTab === 'button') return m.hue_type === 'button';
+            if (currentTab === 'scene') return m.hue_type === 'scene';
             return false;
         });
         
@@ -400,6 +407,9 @@
             off.sort((a,b)=>a.loxone_name.localeCompare(b.loxone_name));
             appendGroup(`💡 Ein (${on.length})`, on, 'var(--accent)');
             appendGroup(`🌑 Aus (${off.length})`, off, 'var(--text-muted)');
+        } else if(currentTab === 'scene') {
+            filtered.sort((a,b) => a.loxone_name.localeCompare(b.loxone_name));
+            filtered.forEach(m => list.appendChild(createMappingItem(m)));
         } else {
             // FIX: Schalter nach Batterie sortieren (leer zuerst), danach alphabetisch
             filtered.sort((a,b) => {
@@ -454,6 +464,7 @@
             </div>
             <div style="display:flex; align-items:center">
                 <div class="status-badges">${badges}</div>
+                ${m.hue_type === 'scene' ? '<button class="scene-btn" data-value="1" title="Szene abrufen">▶</button><button class="scene-btn" data-value="0" title="Raum/Zone ausschalten">⏹</button>' : ''}
                 <button class="del-btn" title="Löschen">✖</button>
             </div>
         `;
@@ -462,10 +473,22 @@
             event.stopPropagation();
             deleteMapping(m.loxone_name);
         });
+        if (m.hue_type === 'scene') {
+            div.querySelectorAll('.scene-btn').forEach(btn => btn.addEventListener('click', event => {
+                event.stopPropagation();
+                testScene(m.loxone_name, btn.dataset.value);
+            }));
+        }
         return div;
     }
 
     async function loadTargets() { try { targets = await apiRequest('/api/targets'); if(currentTab!=='system') renderDropdown(); } catch(e){ console.error("Fehler bei loadTargets:", e); } }
+    async function loadSceneTargets() {
+        try {
+            sceneTargets = await apiRequest('/api/scenes');
+            if (currentTab === 'scene') renderSceneDropdowns();
+        } catch(e) { console.error("Fehler bei loadSceneTargets:", e); }
+    }
     async function loadMappings() { try { mappings = await apiRequest('/api/mapping'); if(currentTab!=='system') renderMappings(); } catch(e){ console.error("Fehler bei loadMappings:", e); } }
     async function loadStatus() { try { status = await apiRequest('/api/status'); if(currentTab!=='system') renderMappings(); } catch(e){ console.error("Fehler bei loadStatus:", e); } }
     async function loadMultiSyncSettingsCache() {
@@ -483,7 +506,49 @@
         el.style.display = '';
     }
     
+    function renderSceneDropdowns() {
+        const groupSel = document.getElementById('sceneGroup');
+        if (!groupSel) return;
+        const previous = groupSel.value;
+        groupSel.innerHTML = '<option value="">-- Wählen --</option>';
+        sceneTargets.forEach(g => {
+            const opt = document.createElement('option');
+            opt.value = g.id;
+            opt.textContent = `${g.rtype === 'zone' ? '🗺️' : '🏠'} ${g.name}`;
+            groupSel.appendChild(opt);
+        });
+        if (sceneTargets.some(g => g.id === previous)) groupSel.value = previous;
+        renderSceneOptions();
+    }
+
+    function renderSceneOptions() {
+        const groupSel = document.getElementById('sceneGroup');
+        const sceneSel = document.getElementById('sceneTarget');
+        if (!groupSel || !sceneSel) return;
+        const group = sceneTargets.find(g => g.id === groupSel.value);
+        if (!group) {
+            sceneSel.innerHTML = '<option value="">-- Zuerst Raum/Zone wählen --</option>';
+            return;
+        }
+        const scenes = group.scenes.filter(sc => !mappings.some(m => m.hue_uuid === sc.id));
+        sceneSel.innerHTML = `<option value="">${scenes.length ? '-- Wählen --' : '-- Keine (weiteren) Szenen --'}</option>`;
+        scenes.forEach(sc => {
+            const opt = document.createElement('option');
+            opt.value = sc.id; opt.textContent = sc.name;
+            sceneSel.appendChild(opt);
+        });
+    }
+
+    async function testScene(name, value) {
+        try {
+            const response = await fetch(`/${encodeURIComponent(name)}/${value}`, { credentials: 'same-origin' });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            showToast(value === '0' ? 'Raum/Zone ausgeschaltet' : 'Szene abgerufen');
+        } catch (error) { alert('Szene fehlgeschlagen: ' + error.message); }
+    }
+
     function renderDropdown() {
+        if (currentTab === 'scene') return renderSceneDropdowns();
         const select = document.getElementById('hueTarget');
         if(!select) return;
         select.innerHTML = '<option value="">-- Wählen --</option>';
@@ -521,11 +586,30 @@
         return payload;
     }
 
+    function buildSceneMapping(loxoneName) {
+        const group = sceneTargets.find(g => g.id === document.getElementById('sceneGroup').value);
+        const scene = group?.scenes.find(sc => sc.id === document.getElementById('sceneTarget').value);
+        if (!group || !scene) return null;
+        return {
+            loxone_name: loxoneName,
+            hue_uuid: scene.id,
+            hue_name: `${group.name}: ${scene.name}`,
+            hue_type: 'scene',
+            scene_group_rid: group.id,
+            scene_group_rtype: group.rtype
+        };
+    }
+
     async function addMapping() {
         const nameIn = document.getElementById('inName');
+        if (currentTab === 'scene') {
+            const entry = nameIn.value ? buildSceneMapping(nameIn.value.toLowerCase()) : null;
+            if (!entry) return alert("Fehlende Daten");
+            return saveNewMapping(entry, nameIn);
+        }
         const hueSel = document.getElementById('hueTarget');
         if(!nameIn.value || !hueSel.value) return alert("Fehlende Daten");
-        const candidate = [...mappings, {
+        return saveNewMapping({
             loxone_name: nameIn.value.toLowerCase(),
             hue_uuid: hueSel.value,
             hue_name: hueSel.options[hueSel.selectedIndex].text,
@@ -538,11 +622,17 @@
             verify_state: false,
             split_on: false,
             repeat_command: false
-        }];
+        }, nameIn);
+    }
+
+    async function saveNewMapping(entry, nameIn) {
+        if (mappings.some(m => m.loxone_name === entry.loxone_name)) return alert(`Loxone Name "${entry.loxone_name}" ist bereits vergeben.`);
+        const candidate = [...mappings, entry];
         try {
             await apiRequest('/api/mapping', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(candidate)});
             mappings = candidate;
             nameIn.value=''; loadMappings(); loadTargets();
+            if (entry.hue_type === 'scene') renderSceneOptions();
         } catch (error) { alert('Speichern fehlgeschlagen: ' + error.message); }
     }
     async function deleteMapping(name) {
@@ -1100,8 +1190,11 @@
     }
 
     function showDetails(uuid, loxoneName) {
-        const target = targets.find(t => t.uuid === uuid);
         const entry = mappings.find(m => m.loxone_name === loxoneName);
+        // Szenen stehen nicht in /api/targets: Daten aus dem Mapping nehmen.
+        const target = entry?.hue_type === 'scene'
+            ? { uuid: entry.hue_uuid, name: entry.hue_name }
+            : targets.find(t => t.uuid === uuid);
         const currentStatus = status[loxoneName] || {};
         if(!target || !entry) return;
         detailsDraft = createDetailsDraft(entry);
@@ -1119,6 +1212,16 @@
                 </div>
             </div>
         `;
+
+        if (entry.hue_type === 'scene') {
+            const safeName = escapeHtml(detailsDraft.values.loxone_name);
+            content += `
+            <div class="settings-card">
+                <div style="font-weight:500; margin-bottom:6px;">🎬 Aufruf aus Loxone</div>
+                <div style="font-size:0.85rem; font-family:monospace;">/${safeName}/1 → Szene abrufen<br>/${safeName}/0 → Raum/Zone ausschalten</div>
+            </div>
+            `;
+        }
 
         // 1. SETTINGS (nur für Lichter/Gruppen)
         if (entry.hue_type === 'light' || entry.hue_type === 'group') {
@@ -1222,7 +1325,9 @@
         }
 
         // 2. STATUS & SPECS (für alle Geräte)
-        content += `<h3 style="margin-top:0; font-size:1rem; color:var(--text-main);">⚡ Aktueller Status</h3><table class="details-table">`;
+        // Szenen haben keinen eigenen Status.
+        if (entry.hue_type !== 'scene') content += `<h3 style="margin-top:0; font-size:1rem; color:var(--text-main);">⚡ Aktueller Status</h3>`;
+        content += `<table class="details-table">`;
         const isOn = currentStatus.on === 1 || currentStatus.on === true;
         
         if (currentStatus.on !== undefined) {
@@ -1261,7 +1366,7 @@
         if(checked.length === 0) return alert("Bitte wählen.");
         const names = Array.from(checked).map(cb => cb.value).join(',');
         // Lichter: Standard = virtuelle Ausgänge; 'inputs' = UDP-Rückmeldungen der Lichter mit Loxone Sync
-        const type = typeOverride === 'inputs' ? 'inputs' : (currentTab === 'light' ? 'outputs' : 'inputs');
+        const type = typeOverride === 'inputs' ? 'inputs' : (currentTab === 'light' ? 'outputs' : (currentTab === 'scene' ? 'scenes' : 'inputs'));
         window.location.href = `/api/download/${type}?names=${names}`;
         closeModal('exportModal');
     }
@@ -1305,6 +1410,7 @@
             if (currentTab === 'light') return m.hue_type === 'light' || m.hue_type === 'group';
             if (currentTab === 'sensor') return m.hue_type === 'sensor';
             if (currentTab === 'button') return m.hue_type === 'button';
+            if (currentTab === 'scene') return m.hue_type === 'scene';
             return false;
         });
         filtered.sort((a,b) => a.loxone_name.localeCompare(b.loxone_name));

@@ -7,6 +7,7 @@
     --accent: #85c440; 
     --sensor: #ff9500; 
     --button: #007aff; 
+    --scene: #af52de; 
     --danger: #ff3b30; 
     --radius: 12px; 
     --input-bg: #ffffff; 
@@ -85,6 +86,7 @@ h1 {
 .tab[data-tab="light"].active { background: var(--accent); } 
 .tab[data-tab="sensor"].active { background: var(--sensor); } 
 .tab[data-tab="button"].active { background: var(--button); } 
+.tab[data-tab="scene"].active { background: var(--scene); } 
 .tab[data-tab="system"].active, .tab[data-tab="diag"].active { background: #666; }
 
 .tab-content { display: none; } 
@@ -202,6 +204,7 @@ button.add-btn {
 .type-light, .type-group { border-left-color: var(--accent); } 
 .type-sensor { border-left-color: var(--sensor); } 
 .type-button { border-left-color: var(--button); }
+.type-scene { border-left-color: var(--scene); }
 
 .mapping-lox { font-family: monospace; font-weight: 700; }
 .mapping-hue { font-size: 0.9rem; color: var(--text-muted); }
@@ -217,6 +220,7 @@ button.add-btn {
     text-align: center; 
 }
 
+.scene-btn { background: transparent; border: 1px solid var(--border); color: var(--text-main); padding: 5px 10px; border-radius: 6px; cursor: pointer; margin-right: 6px; }
 .del-btn { background: transparent; border: 1px solid var(--border); color: var(--text-muted); padding: 5px 10px; border-radius: 6px; cursor: pointer; }
 .info-btn { background: transparent; border: none; padding: 0 10px; font-size: 1.2em; cursor: pointer; opacity: 0.6; }
 .info-btn:hover { opacity: 1; }
