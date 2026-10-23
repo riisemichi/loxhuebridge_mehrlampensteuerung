@@ -10,11 +10,11 @@ Sie ermöglicht eine extrem schnelle, lokale Steuerung ohne Cloud-Verzögerung u
 
 ---
 
-## 🚀 Features V2.5.19 Mehrlampensteuerung
+## 🚀 Features V2.5.20 Mehrlampensteuerung
 
 ### Neu in diesem Fork
 
-* **Hue-Szenen aus Loxone abrufen:** Im neuen Tab **🎬 Szenen** Raum/Zone und Szene wählen, Loxone Name vergeben. `/<name>/1` ruft die Szene ab, `/<name>/0` schaltet den Raum bzw. die Zone aus. Eigener XML-Export als digitale virtuelle Ausgänge.
+* **Hue-Szenen aus Loxone abrufen:** Im neuen Tab **🎬 Szenen** Raum/Zone und Szene wählen, Loxone Name vergeben. `/<name>/1` ruft die Szene ab, `/<name>/0` schaltet den Raum bzw. die Zone aus. Optional als **Live-Szene** wie mit dem Play-Button der Hue App. Eigener XML-Export als digitale virtuelle Ausgänge.
 * **Mehrlampensynchronisierung pro Lampe:** Einzelne Hue-Lampen können gezielt in einen gemeinsamen Sammel-/Batch-Ablauf aufgenommen werden.
 * **Multi-Sync Gruppen A-E:** Lampen können einer von fünf neutralen Gruppen zugeordnet werden, z. B. für Wohnzimmer, Büro oder Küche.
 * **Manuelle Ablauf-Cluster:** Innerhalb einer Multi-Sync-Gruppe können optisch zusammengehörige Lampen enger geplant werden, z. B. Deckenlampe top/bottom, Stehlampe oben/mitte/unten, TV oder Buddha.
@@ -175,7 +175,7 @@ Dieses Repository verwendet zwei Branches:
 
 | Branch | Version | Zweck |
 | --- | --- | --- |
-| `main` | `2.5.19` | Stabiler Stand für den normalen Betrieb, inkl. Mehrlampengruppen, Ablauf-Clustern, Effekt-Fallback und Stabilitätskorrekturen |
+| `main` | `2.5.20` | Stabiler Stand für den normalen Betrieb, inkl. Mehrlampengruppen, Ablauf-Clustern, Effekt-Fallback und Stabilitätskorrekturen |
 | `develop` | `2.5.12-dev` | Weiterentwicklungsstand; künftige Änderungen werden zuerst hier getestet |
 
 Wenn kein Branch angegeben wird, wird normalerweise `main` installiert. Das ist die empfohlene Variante für den normalen Betrieb.
@@ -217,7 +217,7 @@ git pull --ff-only origin main
 docker compose up -d --build
 ```
 
-Danach zeigen der Kopfbereich des Dashboards und **System** die Version `2.5.19` ohne `-dev` an.
+Danach zeigen der Kopfbereich des Dashboards und **System** die Version `2.5.20` ohne `-dev` an.
 
 ---
 
@@ -517,6 +517,8 @@ Hue-Szenen aus der Hue-App lassen sich direkt aus Loxone abrufen, ohne App-Key o
 | `/buero_konzentrieren/1` | Ruft die Szene ab (jeder Wert ungleich 0) |
 | `/buero_konzentrieren/0` | Schaltet den Raum bzw. die Zone der Szene aus |
 
+**Live-Szene:** In den Details der Szene (Klick auf die Zeile) die Option **Live-Szene (dynamisch)** aktivieren. `/<name>/1` und ▶ starten die Szene dann wie der Play-Button der Hue App, die Farben der Palette wechseln laufend (Hue `recall` mit `dynamic_palette`). In der Liste erscheint das Badge **LIVE**. Die Option gibt es nur für Szenen mit Farbpalette. Das Tempo stellt man in der Hue-App bei der Szene ein.
+
 Die Szene wird über ihre Hue-ID gespeichert. Ein Umbenennen der Szene in der Hue-App bricht die Zuordnung also nicht. Den Loxone Namen kann man in den Details ändern. Szenen sind Teil von Backup und Restore.
 
 **Loxone:** Im Tab **🎬 Szenen** über **📥 XML Exportieren** die Vorlage `lox_scenes.xml` herunterladen und wie die anderen Vorlagen importieren (**Virtuelle Ausgänge → Vordefinierte Geräte → LoxHueBridge Scenes**). Jede Szene ist ein digitaler Ausgang mit *Befehl bei EIN* `/<name>/1` und *Befehl bei AUS* `/<name>/0`. Den Ausgang z. B. mit einem Taster-Baustein ansteuern.
@@ -627,7 +629,7 @@ RGB-Werte werden strikt validiert. R, G und B müssen jeweils im Bereich `0..100
 
 | Funktion | Befehl | Erklärung |
 | --- | --- | --- |
-| **Szene abrufen** | `/buero_konzentrieren/1` | Befehl bei EIN, Name aus dem Tab 🎬 Szenen |
+| **Szene abrufen** | `/buero_konzentrieren/1` | Befehl bei EIN, Name aus dem Tab 🎬 Szenen. Startet als Live-Szene, wenn in den Details aktiviert |
 | **Raum/Zone aus** | `/buero_konzentrieren/0` | Befehl bei AUS |
 
 **Sensoren (UDP Eingang):**

@@ -1,3 +1,10 @@
+## [2.5.20] - 2026-10-23
+### Neu
+- Live-Szenen: In den Details einer Szene lässt sich **Live-Szene (dynamisch)** aktivieren. `/<name>/1` und der Testknopf ▶ starten die Szene dann wie der Play-Button der Hue App (`recall: dynamic_palette`), die Farben der Palette wechseln laufend. Die Einstellung wird im Mapping gespeichert (Teil von Backup/Restore), die Liste zeigt das Badge **LIVE**. Szenen ohne Farbpalette bieten die Option nicht an.
+
+### Prüfungen
+- Tests für den dynamischen Szenenabruf, die Erkennung der Farbpalette in der Szenenliste und das Speichern bzw. Ablehnen ungültiger Werte für `scene_dynamic`.
+
 ## [2.5.19] - 2026-10-23
 ### Korrekturen
 - XML-Export der Eingänge (`lox_inputs.xml`): Hue Taster erhalten jetzt zwei digitale Eingänge pro Taste, „Kurz“ (`hue.<name>.button short_release`) und „Lang“ (`hue.<name>.button long_press`). Bisher gab es nur einen Eingang `hue.<name>.button \v`, der den als Text gesendeten Event-Typ nicht unterscheiden konnte. Bereits angelegte Eingänge in Loxone bleiben unverändert, für die Unterscheidung die XML-Vorlage neu importieren oder die beiden Eingänge von Hand anlegen.

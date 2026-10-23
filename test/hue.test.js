@@ -1944,8 +1944,8 @@ test('Szene: getSceneTargets gruppiert Szenen nach Raum/Zone', async () => {
     configManager.config.bridgeIp = 'bridge';
     axiosGetResponses.push(
         { data: { data: [
-            { id: 'sc-2', metadata: { name: 'Lesen' }, group: { rid: 'room-1', rtype: 'room' } },
-            { id: 'sc-1', metadata: { name: 'Entspannen' }, group: { rid: 'room-1', rtype: 'room' } },
+            { id: 'sc-2', metadata: { name: 'Lesen' }, group: { rid: 'room-1', rtype: 'room' }, palette: { color: [], color_temperature: [], dimming: [] } },
+            { id: 'sc-1', metadata: { name: 'Entspannen' }, group: { rid: 'room-1', rtype: 'room' }, palette: { color: [{ color: { xy: { x: 0.5, y: 0.4 } } }], color_temperature: [], dimming: [] } },
             { id: 'sc-3', metadata: { name: 'Nacht' }, group: { rid: 'zone-1', rtype: 'zone' } },
             { id: 'sc-x', metadata: { name: 'Verwaist' }, group: { rid: 'unbekannt', rtype: 'room' } }
         ] } },
@@ -1956,7 +1956,7 @@ test('Szene: getSceneTargets gruppiert Szenen nach Raum/Zone', async () => {
     const groups = await hueManager.getSceneTargets();
     assert.deepStrictEqual(groups, [{
         id: 'room-1', rtype: 'room', name: 'Büro', groupedLightRid: 'gl-1',
-        scenes: [{ id: 'sc-1', name: 'Entspannen' }, { id: 'sc-2', name: 'Lesen' }]
+        scenes: [{ id: 'sc-1', name: 'Entspannen', dynamic: true }, { id: 'sc-2', name: 'Lesen', dynamic: false }]
     }]);
 });
 
@@ -1983,6 +1983,20 @@ test('Szene: Wert 1 ruft die Szene ab, Wert 0 schaltet den Raum aus', async () =
     assert.strictEqual(axiosPutCalls.length, 2);
     assert.strictEqual(axiosPutCalls[1].url, 'https://bridge/clip/v2/resource/grouped_light/gl-9');
     assert.deepStrictEqual(axiosPutCalls[1].payload, { on: { on: false } });
+});
+
+test('Szene: Live-Szene startet mit recall dynamic_palette', async () => {
+    axiosPutCalls.length = 0;
+    axiosPutResponses.length = 0;
+    configManager.config.bridgeIp = 'bridge';
+    hueManager.HUE_RESOURCE_DELAYS.grouped_light.delayMs = 0;
+    _internals.resetHueSchedulerForTests();
+    const entry = { loxone_name: 'wohnen_live', hue_type: 'scene', hue_uuid: 'sc-live', scene_dynamic: true, scene_group_rid: 'room-1', scene_group_rtype: 'room' };
+
+    assert.strictEqual(await hueManager.executeScene(entry, '1'), true);
+    assert.strictEqual(axiosPutCalls.length, 1);
+    assert.strictEqual(axiosPutCalls[0].url, 'https://bridge/clip/v2/resource/scene/sc-live');
+    assert.deepStrictEqual(axiosPutCalls[0].payload, { recall: { action: 'dynamic_palette' } });
 });
 
 test('Szene: Hue errors[] und fehlender Raum gelten als Fehler', async () => {
