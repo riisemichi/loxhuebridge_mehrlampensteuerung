@@ -828,3 +828,30 @@ test('Routes - Szenen: Details speichern nur den Loxone Namen', () => {
     assert.strictEqual(payload.success, true);
     assert.deepStrictEqual(payload.mapping, { hue_uuid: 'scene-1', hue_name: 'Büro: Lesen', loxone_name: 'buero_lesen2', hue_type: 'scene', scene_group_rid: 'room-1', scene_group_rtype: 'room' });
 });
+
+test('Routes - Szenen: Details speichern Live-Szene und lehnen ungültige Werte ab', () => {
+    configManager.mapping = [
+        { hue_uuid: 'scene-1', hue_name: 'Wohnen: Tropen', loxone_name: 'wohnen_tropen', hue_type: 'scene', scene_group_rid: 'room-1', scene_group_rtype: 'room' }
+    ];
+    const save = body => {
+        const result = { statusCode: 200, payload: null };
+        getRouteHandler('/api/mapping/:loxoneName/settings')({ params: { loxoneName: 'wohnen_tropen' }, body }, {
+            status(code) { result.statusCode = code; return this; },
+            json(content) { result.payload = content; return this; }
+        });
+        return result;
+    };
+
+    let result = save({ loxone_name: 'wohnen_tropen', scene_dynamic: true });
+    assert.strictEqual(result.payload.success, true);
+    assert.strictEqual(result.payload.mapping.scene_dynamic, true);
+    assert.strictEqual(configManager.mapping[0].scene_dynamic, true);
+
+    result = save({ scene_dynamic: 'ja' });
+    assert.strictEqual(result.statusCode, 400);
+    assert.strictEqual(configManager.mapping[0].scene_dynamic, true);
+
+    result = save({ scene_dynamic: false });
+    assert.strictEqual(result.payload.success, true);
+    assert.strictEqual(configManager.mapping[0].scene_dynamic, false);
+});

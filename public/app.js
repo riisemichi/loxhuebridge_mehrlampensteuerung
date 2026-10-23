@@ -453,6 +453,8 @@
             badges += `<span class="badge" style="background:var(--badge-info)">${escapeHtml(val)}</span>`;
         }
 
+        if (m.hue_type === 'scene' && m.scene_dynamic === true) badges += '<span class="badge" style="background:var(--badge-info)">LIVE</span>';
+
         const div = document.createElement('div');
         div.className = `mapping-item type-${escapeHtml(m.hue_type)}`;
         div.onclick = () => showDetails(m.hue_uuid, m.loxone_name);
@@ -543,7 +545,8 @@
         try {
             const response = await fetch(`/${encodeURIComponent(name)}/${value}`, { credentials: 'same-origin' });
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            showToast(value === '0' ? 'Raum/Zone ausgeschaltet' : 'Szene abgerufen');
+            const live = mappings.some(m => m.loxone_name === name && m.scene_dynamic === true);
+            showToast(value === '0' ? 'Raum/Zone ausgeschaltet' : (live ? 'Live-Szene gestartet' : 'Szene abgerufen'));
         } catch (error) { alert('Szene fehlgeschlagen: ' + error.message); }
     }
 
@@ -1014,6 +1017,11 @@
 
     function createDetailsDraft(entry) {
         const offset = normalizeSyncOffset(entry.sync_offset_ms, 0);
+        // Szenen speichern nur Loxone Name und Live-Szene.
+        if (entry.hue_type === 'scene') {
+            const sceneValues = () => ({ loxone_name: entry.loxone_name, scene_dynamic: entry.scene_dynamic === true });
+            return { loxoneName: entry.loxone_name, original: sceneValues(), values: sceneValues() };
+        }
         return {
             loxoneName: entry.loxone_name,
             original: {
@@ -1139,8 +1147,9 @@
     async function saveDetailsSettings() {
         if (!detailsDraft) return closeModal('detailsModal');
         const statusEl = document.getElementById('detailsSaveStatus');
-        const offset = normalizeSyncOffset(detailsDraft.values.sync_offset_ms, null);
-        if (offset === null) {
+        const isScene = !('sync_offset_ms' in detailsDraft.values);
+        const offset = isScene ? null : normalizeSyncOffset(detailsDraft.values.sync_offset_ms, null);
+        if (!isScene && offset === null) {
             if (statusEl) statusEl.textContent = 'Sync-Offset ist ungültig.';
             return;
         }
@@ -1156,7 +1165,7 @@
             return;
         }
 
-        const body = { ...detailsDraft.values, sync_offset_ms: offset };
+        const body = isScene ? { ...detailsDraft.values } : { ...detailsDraft.values, sync_offset_ms: offset };
         if (statusEl) statusEl.textContent = 'Speichere...';
 
         try {
@@ -1215,10 +1224,26 @@
 
         if (entry.hue_type === 'scene') {
             const safeName = escapeHtml(detailsDraft.values.loxone_name);
+            // Ohne Farbpalette (laut Hue) gibt es keinen Live-Modus. Unbekannt: Checkbox trotzdem anzeigen.
+            const sceneInfo = sceneTargets.flatMap(g => g.scenes || []).find(sc => sc.id === entry.hue_uuid);
+            const showDynamic = !sceneInfo || sceneInfo.dynamic !== false || detailsDraft.values.scene_dynamic;
             content += `
             <div class="settings-card">
                 <div style="font-weight:500; margin-bottom:6px;">🎬 Aufruf aus Loxone</div>
                 <div style="font-size:0.85rem; font-family:monospace;">/${safeName}/1 → Szene abrufen<br>/${safeName}/0 → Raum/Zone ausschalten</div>
+            </div>
+            `;
+            content += showDynamic ? `
+            <div class="settings-card">
+                <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                    <input type="checkbox" ${detailsDraft.values.scene_dynamic ? 'checked' : ''} onchange="updateDetailsDraft('scene_dynamic', this.checked)">
+                    <span style="font-weight:500;">Live-Szene (dynamisch)</span>
+                </label>
+                <div style="font-size:0.8rem; color:var(--text-muted); margin-left:24px; margin-top:2px;">Startet die Szene wie mit dem Play-Button der Hue App: Die Farben der Palette wechseln laufend. Gilt für <span style="font-family:monospace">/&lt;name&gt;/1</span> und den Testknopf ▶.</div>
+            </div>
+            ` : `
+            <div class="settings-card">
+                <div style="font-size:0.8rem; color:var(--text-muted);">Diese Szene hat keine Farbpalette und kann nicht als Live-Szene laufen.</div>
             </div>
             `;
         }
