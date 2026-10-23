@@ -1,3 +1,10 @@
+## [2.5.19] - 2026-10-23
+### Korrekturen
+- XML-Export der Eingänge (`lox_inputs.xml`): Hue Taster erhalten jetzt zwei digitale Eingänge pro Taste, „Kurz“ (`hue.<name>.button short_release`) und „Lang“ (`hue.<name>.button long_press`). Bisher gab es nur einen Eingang `hue.<name>.button \v`, der den als Text gesendeten Event-Typ nicht unterscheiden konnte. Bereits angelegte Eingänge in Loxone bleiben unverändert, für die Unterscheidung die XML-Vorlage neu importieren oder die beiden Eingänge von Hand anlegen.
+
+### Prüfungen
+- Test für die Taster-Eingänge im XML-Export.
+
 ## [2.5.18] - 2026-10-23
 ### Neu
 - Hue-Szenen aus Loxone abrufen: Neuer Tab **🎬 Szenen** mit Auswahl Raum/Zone und zugehöriger Szene. Die Szene wird mit eigenem Loxone Namen gespeichert (per Hue-ID, Teil von Backup/Restore). `/<name>/1` ruft die Szene ab (`recall: active`), `/<name>/0` schaltet den Raum bzw. die Zone aus. Beide Befehle laufen über den globalen Hue-Scheduler mit Bridge-Limit und 429-Backoff.

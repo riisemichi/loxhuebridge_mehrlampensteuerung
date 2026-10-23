@@ -558,6 +558,22 @@ test('Routes - XML Exports escape special characters', async (t) => {
     assert.strictEqual(inputsXml.includes('Sensor & Taster'), false);
 });
 
+test('Routes - XML Export Eingänge: Taster erhalten je einen Digitaleingang für kurz und lang', () => {
+    configManager.mapping = [
+        { hue_uuid: 'uuid-btn', hue_name: 'Dimmschalter (Taste 1)', loxone_name: 'taste1', hue_type: 'button' },
+        { hue_uuid: 'uuid-dial', hue_name: 'Tap Dial (Drehring)', loxone_name: 'dial', hue_type: 'button' }
+    ];
+    let xml = '';
+    getRouteHandler('/api/download/inputs')({ query: {} }, { set() {}, send(c) { xml = c; } });
+
+    assert.ok(xml.includes('<VirtualInUdpCmd Title="Taste1 Kurz" Check="hue.taste1.button short_release" Analog="false"/>'));
+    assert.ok(xml.includes('<VirtualInUdpCmd Title="Taste1 Lang" Check="hue.taste1.button long_press" Analog="false"/>'));
+    // Der Event-Typ ist Text, ein "\v"-Eingang könnte ihn nicht unterscheiden
+    assert.strictEqual(xml.includes('.button \\v'), false);
+    assert.ok(xml.includes('Check="hue.dial.rotary cw"'));
+    assert.ok(xml.includes('Check="hue.dial.rotary ccw"'));
+});
+
 test('Routes - typisierte Loxone-Pfade validieren je Befehlstyp', async () => {
     configManager.isConfigured = true;
     configManager.mapping = [

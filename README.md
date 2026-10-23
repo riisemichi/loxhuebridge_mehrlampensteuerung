@@ -10,7 +10,7 @@ Sie ermöglicht eine extrem schnelle, lokale Steuerung ohne Cloud-Verzögerung u
 
 ---
 
-## 🚀 Features V2.5.18 Mehrlampensteuerung
+## 🚀 Features V2.5.19 Mehrlampensteuerung
 
 ### Neu in diesem Fork
 
@@ -175,7 +175,7 @@ Dieses Repository verwendet zwei Branches:
 
 | Branch | Version | Zweck |
 | --- | --- | --- |
-| `main` | `2.5.18` | Stabiler Stand für den normalen Betrieb, inkl. Mehrlampengruppen, Ablauf-Clustern, Effekt-Fallback und Stabilitätskorrekturen |
+| `main` | `2.5.19` | Stabiler Stand für den normalen Betrieb, inkl. Mehrlampengruppen, Ablauf-Clustern, Effekt-Fallback und Stabilitätskorrekturen |
 | `develop` | `2.5.12-dev` | Weiterentwicklungsstand; künftige Änderungen werden zuerst hier getestet |
 
 Wenn kein Branch angegeben wird, wird normalerweise `main` installiert. Das ist die empfohlene Variante für den normalen Betrieb.
@@ -217,7 +217,7 @@ git pull --ff-only origin main
 docker compose up -d --build
 ```
 
-Danach zeigen der Kopfbereich des Dashboards und **System** die Version `2.5.18` ohne `-dev` an.
+Danach zeigen der Kopfbereich des Dashboards und **System** die Version `2.5.19` ohne `-dev` an.
 
 ---
 
@@ -642,6 +642,8 @@ Port: 7000, falls nicht geändert.
 | **Taster (Lang)** | `hue.taster.button long_press` |
 | **Drehring (Rechts)** | `hue.dial.rotary cw` |
 | **Drehring (Links)** | `hue.dial.rotary ccw` |
+
+Taster senden den Event-Typ als Text. Pro Event braucht es daher einen eigenen **digitalen** Eingang mit fester Befehlserkennung (`short_release` bzw. `long_press`), nicht `\v`. Der XML-Export der Eingänge legt pro Taste die beiden Eingänge „Kurz“ und „Lang“ an. Andere Hue Events (`initial_press`, `repeat`, `long_release`) werden nicht weitergeleitet, `long_press` kommt pro langem Druck genau einmal.
 
 **Lichter mit Loxone Sync (UDP Eingang):**
 
