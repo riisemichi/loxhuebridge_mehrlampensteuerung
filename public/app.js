@@ -73,12 +73,12 @@
 
         if (bat <= 10) {
             color = 'red';
-            badgeStyle = 'background:#ffcdcd; color:red; font-weight:bold;';
+            badgeStyle = 'background:var(--badge-err); color:var(--danger); font-weight:bold;';
             textStyle = 'color:red; font-weight:bold;';
             icon = '🪫';
         } else if (bat <= 20) {
             color = 'orange';
-            badgeStyle = 'background:#fff3e0; color:orange; font-weight:bold;';
+            badgeStyle = 'background:var(--badge-warn); color:var(--sensor); font-weight:bold;';
             textStyle = 'color:orange; font-weight:bold;';
             icon = '🔋';
         }
@@ -131,7 +131,7 @@
             const tConf = typeConfig[m.hue_type] || {icon:'❓', label: m.hue_type};
             html += `<tr>
                 <td style="${textStyle}"><div style="font-weight:bold">${escapeHtml(m.loxone_name)}</div><div style="font-size:0.8em;color:#666">${escapeHtml(m.hue_name)}</div></td>
-                <td><span class="badge" style="background:#f1f3f5;color:#333; border:1px solid #ddd">${escapeHtml(tConf.icon)} ${escapeHtml(tConf.label)}</span></td>
+                <td><span class="badge" style="background:var(--badge-neutral);color:var(--text-main); border:1px solid var(--border)">${escapeHtml(tConf.icon)} ${escapeHtml(tConf.label)}</span></td>
                 <td>${badge || '-'}</td>
                 <td style="font-size:0.8em; font-family:monospace; color:#555">${lastVal}</td>
             </tr>`;
@@ -188,11 +188,11 @@
                         supportedTimedEffects: rawCaps.supportedTimedEffects?.map(escapeHtml)
                     };
                     const yes = '<span style="color:var(--success,#4caf50)">✅</span>';
-                    const no  = '<span style="color:#ccc">❌</span>';
+                    const no  = '<span style="color:var(--text-faint)">❌</span>';
                     const effects = caps.supportedEffects?.filter(e => e !== 'no_effect').map(e =>
-                        `<span class="badge" style="font-size:0.75em;background:#f0f0f0">${e}</span>`).join(' ') || '<span style="color:#ccc">–</span>';
+                        `<span class="badge" style="font-size:0.75em;background:var(--badge-neutral)">${e}</span>`).join(' ') || '<span style="color:var(--text-faint)">–</span>';
                     const timedFx = caps.supportedTimedEffects?.filter(e => e !== 'no_effect').map(e =>
-                        `<span class="badge" style="font-size:0.75em;background:#e8f5e9">${e}</span>`).join(' ') || '<span style="color:#ccc">–</span>';
+                        `<span class="badge" style="font-size:0.75em;background:var(--badge-ok)">${e}</span>`).join(' ') || '<span style="color:var(--text-faint)">–</span>';
                     capsHtml += `<tr>
                         <td><div style="font-weight:bold">${escapeHtml(m.loxone_name)}</div><div style="font-size:0.8em;color:#666">${escapeHtml(m.hue_name)}</div></td>
                         <td style="text-align:center">${caps.supportsDimming ? yes : no}</td>
@@ -246,7 +246,7 @@
                     ].filter(Boolean).join('<br>');
                     const last = row.letzterWiderspruch
                         ? `${escapeHtml(row.letzterWiderspruch.erwartet || '')} → ${escapeHtml(row.letzterWiderspruch.gemeldet || '')}<br><span style="color:var(--text-muted)">nach ${Math.round((row.letzterWiderspruch.nachMs || 0) / 1000)} s</span>`
-                        : (row.letzterFehler ? escapeHtml(row.letzterFehler) : '<span style="color:#ccc">-</span>');
+                        : (row.letzterFehler ? escapeHtml(row.letzterFehler) : '<span style="color:var(--text-faint)">-</span>');
 
                     lampHtml += `<tr>
                         <td><div style="font-weight:bold">${escapeHtml(row.name || row.uuid)}</div><div style="font-size:0.75em;color:#888;font-family:monospace">${escapeHtml(row.uuid)}</div></td>
@@ -381,7 +381,7 @@
             });
 
             const h = document.createElement('div');
-            h.innerText = title; h.style.cssText = `font-weight:bold; color:${color}; margin:15px 0 5px 0; border-bottom:1px solid #ddd;`;
+            h.innerText = title; h.style.cssText = `font-weight:bold; color:${color}; margin:15px 0 5px 0; border-bottom:1px solid var(--border);`;
             list.appendChild(h);
             items.forEach(m=>list.appendChild(createMappingItem(m)));
         };
@@ -434,13 +434,13 @@
         if (has(st.motion)) badges += `<span class="badge" style="background:var(--border)">${st.motion ? '🏃' : '🧘'}</span>`;
         if (has(st.temp)) badges += `<span class="badge">${escapeHtml(safeNumber(st.temp))}°C</span>`;
         if (has(st.lux)) badges += `<span class="badge">${escapeHtml(safeNumber(st.lux))} lx</span>`;
-        if (has(st.contact)) badges += `<span class="badge" style="background:${st.contact ? '#ffcdcd' : '#e1ffe1'}">${st.contact ? 'OFFEN' : 'ZU'}</span>`;
+        if (has(st.contact)) badges += `<span class="badge" style="background:${st.contact ? 'var(--badge-err)' : 'var(--badge-ok)'}">${st.contact ? 'OFFEN' : 'ZU'}</span>`;
         const { badge: batBadge, textStyle: batTextStyle } = getBatteryHTML(st.bat);
         if (batBadge) badges += batBadge;
 
         if (has(st.on)) {
             if (currentTab === 'light' || st.on) {
-                const bg = st.on ? '#e1ffe1' : '#eee';
+                const bg = st.on ? 'var(--badge-ok)' : 'var(--badge-neutral)';
                 const txt = st.on ? 'AN' : 'AUS';
                 badges += `<span class="badge" style="background:${bg}">${txt}</span>`;
             }
@@ -450,7 +450,7 @@
         if (st.hex && st.on) badges += `<span class="color-dot" style="background-color:${safeHexColor(st.hex)}"></span>`;
         if (st.rotary) {
             const val = (st.rotary === 'cw' || st.rotary === 'ccw') ? st.rotary.toUpperCase() : st.rotary;
-            badges += `<span class="badge" style="background:#e1f5fe">${escapeHtml(val)}</span>`;
+            badges += `<span class="badge" style="background:var(--badge-info)">${escapeHtml(val)}</span>`;
         }
 
         const div = document.createElement('div');
@@ -785,7 +785,7 @@
             html += `
                 <tr>
                     <td colspan="2">
-                        <details style="border:1px solid var(--border); border-radius:6px; padding:10px; background:#fafafa;" ${id === 'a' ? 'open' : ''}>
+                        <details style="border:1px solid var(--border); border-radius:6px; padding:10px; background:var(--bg);" ${id === 'a' ? 'open' : ''}>
                             <summary style="cursor:pointer; font-weight:bold;">${escapeHtml(group.name || label)}</summary>
                             <table class="settings-table" style="margin-top:10px;">
                                 <tr><td>${infoLabel('Name', 'Freier Anzeigename der Multi-Sync-Gruppe. Der Name kann auch als Effektziel verwendet werden, wenn kein gleichnamiges Loxone-Mapping existiert.')}</td><td><input id="sys_multiName_${id}" value="${escapeHtml(group.name || label)}" oninput="renderMultiSyncPreview('${id}')"></td></tr>
@@ -794,7 +794,7 @@
                                 <tr><td>${infoLabel('Batch-Pause', 'Zusätzliche Pause nach jedem Batch. Hilft nur, wenn die Batchgröße kleiner ist als die Lampenanzahl. Bei Batchgröße 10 und 10 Lampen meist 0 ms sinnvoll.')}</td><td><div class="slider-container"><input type="range" id="sys_multiBatchDelayMs_${id}" min="0" max="300" step="10" value="${group.batchDelayMs ?? 30}" oninput="document.getElementById('val_multiBatchDelay_${id}').innerText = this.value + ' ms'; renderMultiSyncPreview('${id}');"><span id="val_multiBatchDelay_${id}" class="slider-val">${group.batchDelayMs ?? 30} ms</span></div></td></tr>
                                 <tr><td>${infoLabel('Max. Lichtbefehle/s', 'Bestimmt den Abstand zwischen verschiedenen Clustern dieser Gruppe. Im Cluster gilt dessen Abstand. Die globale Grenze begrenzt beide; zunächst 10/s testen.')}</td><td><div class="slider-container"><input type="range" id="sys_multiMaxCommandsPerSecond_${id}" min="1" max="50" step="1" value="${group.maxCommandsPerSecond ?? 10}" oninput="document.getElementById('val_multiMaxRate_${id}').innerText = this.value + ' /s'; renderMultiSyncPreview('${id}');"><span id="val_multiMaxRate_${id}" class="slider-val">${group.maxCommandsPerSecond ?? 10} /s</span></div></td></tr>
                                 <tr><td>${infoLabel('Abstand im Ablauf-Cluster', 'Sollabstand innerhalb eines Clusters. Die globale Bridge-Grenze hat Vorrang: Bei 20/s sind auch mit Sollwert 5 ms mindestens 50 ms nötig.')}</td><td><div class="slider-container"><input type="range" id="sys_multiSameClusterSpacingMs_${id}" min="0" max="50" step="1" value="${group.sameClusterSpacingMs ?? 10}" oninput="document.getElementById('val_multiSameClusterSpacing_${id}').innerText = this.value + ' ms'; renderMultiSyncPreview('${id}');"><span id="val_multiSameClusterSpacing_${id}" class="slider-val">${group.sameClusterSpacingMs ?? 10} ms</span></div></td></tr>
-                                <tr><td>${infoLabel('Timing-Test', 'Rechnerischer Plan einschließlich globaler Grenze. Keine Live-Messung: spätere Eingänge, Warteschlangen, Bridge-Antwortzeiten und Retries können den Ablauf verlängern.')}</td><td><div id="multiSyncPreview_${id}" style="font-size:0.8rem; color:var(--text-main); background:#f8f9fa; border:1px solid var(--border); border-radius:6px; padding:10px;"></div></td></tr>
+                                <tr><td>${infoLabel('Timing-Test', 'Rechnerischer Plan einschließlich globaler Grenze. Keine Live-Messung: spätere Eingänge, Warteschlangen, Bridge-Antwortzeiten und Retries können den Ablauf verlängern.')}</td><td><div id="multiSyncPreview_${id}" style="font-size:0.8rem; color:var(--text-main); background:var(--surface-alt); border:1px solid var(--border); border-radius:6px; padding:10px;"></div></td></tr>
                             </table>
                         </details>
                     </td>
@@ -808,7 +808,7 @@
     function renderSecurityRows(security) {
         const s = security || securitySettings;
         return `
-            <tr><td colspan="2" style="background:#eee;font-weight:bold">Sicherheit / Zugriffsschutz</td></tr>
+            <tr><td colspan="2" style="background:var(--section-bg);font-weight:bold">Sicherheit / Zugriffsschutz</td></tr>
             <tr>
                 <td>${infoLabel('Dashboard/API schützen', 'Schützt Webinterface und API mit Basic Auth. Loxone-Steuer-URLs bleiben bewusst frei, damit bestehende virtuelle Ausgänge weiter funktionieren.')}</td>
                 <td>
@@ -876,13 +876,14 @@
         d.multiGroups = MULTI_SYNC_GROUP_IDS.map(id => getMultiSyncFormSettings(id));
 
         d.debug = document.getElementById('sys_debug').checked;
+        d.logRequests = document.getElementById('sys_logRequests').checked;
         d.mqttEnabled = document.getElementById('sys_mqttEnabled').checked;
         d.mqttPassClear = document.getElementById('sys_mqttPassClear')?.checked === true;
         d.disableLogDisk = document.getElementById('sys_disableLogDisk').checked;
 
         try {
             await apiRequest('/api/setup/loxone', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({
-                loxoneIp: d.loxIp, loxonePort: d.loxPort, debug: d.debug,
+                loxoneIp: d.loxIp, loxonePort: d.loxPort, debug: d.debug, logRequests: d.logRequests,
                 transitionTime: d.transitionTime, throttleTime: d.throttleTime, eventStreamWatchdogTimeoutSeconds: d.eventStreamWatchdogTimeoutSeconds,
                 mqttEnabled: d.mqttEnabled, mqttBroker: d.mqttBroker, mqttPort: d.mqttPort, mqttUser: d.mqttUser, mqttPass: d.mqttPass, mqttPassClear: d.mqttPassClear, mqttPrefix: d.mqttPrefix,
                 disableLogDisk: d.disableLogDisk,
@@ -908,7 +909,7 @@
             const v = (val) => val !== undefined ? val : '';
             
             table.innerHTML = `
-                <tr><td colspan="2" style="background:#eee;font-weight:bold">Allgemein</td></tr>
+                <tr><td colspan="2" style="background:var(--section-bg);font-weight:bold">Allgemein</td></tr>
                 <tr><td>Version</td><td><span class="badge" style="background:#333;color:#fff">${s.version}</span></td></tr>
                 <tr><td>${infoLabel('Loxone IP', 'IP-Adresse des Loxone Miniservers für UDP-Rückmeldungen von Hue Statusänderungen.')}</td><td><input id="sys_loxIp" value="${v(s.loxone_ip)}"></td></tr>
                 <tr><td>${infoLabel('UDP Port', 'UDP-Port am Loxone Miniserver, auf den Statusmeldungen gesendet werden. Muss zur virtuellen UDP-Eingangskonfiguration passen.')}</td><td><input type="number" id="sys_loxPort" value="${v(s.loxone_port)}"></td></tr>
@@ -942,7 +943,7 @@
                     </td>
                 </tr>
 
-                <tr><td colspan="2" style="background:#eee;font-weight:bold">Mehrlampensynchronisierung</td></tr>
+                <tr><td colspan="2" style="background:var(--section-bg);font-weight:bold">Mehrlampensynchronisierung</td></tr>
                 ${renderMultiSyncGroupRows(s.multiLightControl)}
                 <!-- legacy single-group controls disabled by grouped scheduler
                 <tr>
@@ -981,12 +982,13 @@
                 <tr>
                     <td>Timing-Test</td>
                     <td>
-                        <div id="multiSyncPreview" style="font-size:0.8rem; color:var(--text-main); background:#f8f9fa; border:1px solid var(--border); border-radius:6px; padding:10px;"></div>
+                        <div id="multiSyncPreview" style="font-size:0.8rem; color:var(--text-main); background:var(--surface-alt); border:1px solid var(--border); border-radius:6px; padding:10px;"></div>
                     </td>
                 </tr>
                 -->
 
                 <tr><td>${infoLabel('Debug Modus', 'Schreibt detaillierte IN/OUT/Event-Logs. Hilfreich zum Testen, im Dauerbetrieb bei vielen Befehlen eher deaktivieren.')}</td><td><input type="checkbox" id="sys_debug" ${s.debug?'checked':''}></td></tr>
+                <tr><td>${infoLabel('Anfragen protokollieren', 'Schreibt jede eingehende Anfrage (z. B. Loxone-Befehle) mit Pfad, HTTP-Status, Dauer und Absender ins Log, Kategorie 🌐. Auch abgewiesene Anfragen (401, 400, 404) erscheinen. Dashboard-Abfragen (/api/*) und statische Dateien werden nicht protokolliert.')}</td><td><input type="checkbox" id="sys_logRequests" ${s.logRequests?'checked':''}></td></tr>
                 <tr>
                     <td>${infoLabel('SD-Card Mode', 'Deaktiviert Schreibzugriffe auf logs.db und hält Logs nur im RAM. Sinnvoll auf SD-Karten-Systemen.')}</td>
                     <td>
@@ -997,7 +999,7 @@
 
                 ${renderSecurityRows(securitySettings)}
 
-                <tr><td colspan="2" style="background:#eee;font-weight:bold">MQTT</td></tr>
+                <tr><td colspan="2" style="background:var(--section-bg);font-weight:bold">MQTT</td></tr>
                 <tr><td>${infoLabel('Aktivieren', 'Aktiviert parallele Statusausgabe an einen MQTT Broker.')}</td><td><input type="checkbox" id="sys_mqttEnabled" ${s.mqttEnabled?'checked':''}></td></tr>
                 <tr><td>${infoLabel('Broker IP', 'Adresse des MQTT Brokers, z. B. Mosquitto oder Home Assistant MQTT.')}</td><td><input id="sys_mqttBroker" value="${v(s.mqttBroker)}"></td></tr>
                 <tr><td>${infoLabel('Port', 'MQTT-Port. Standard ist 1883 ohne TLS.')}</td><td><input type="number" id="sys_mqttPort" value="${v(s.mqttPort)||1883}"></td></tr>
@@ -1348,7 +1350,7 @@
         content += `<tr><td colspan="2" style="border-bottom:none; padding-top:20px; color:var(--text-muted); font-weight:bold;">📋 Technische Daten</td></tr>`;
         content += `<tr><td>Name</td><td>${escapeHtml(target.name)}</td></tr>`;
         content += `<tr><td>Loxone ID</td><td>${escapeHtml(loxoneName)}</td></tr>`;
-        content += `<tr><td>Typ</td><td><span class="badge" style="background:#eee;color:#333">${escapeHtml(entry.hue_type)}</span></td></tr>`;
+        content += `<tr><td>Typ</td><td><span class="badge" style="background:var(--badge-neutral);color:var(--text-main)">${escapeHtml(entry.hue_type)}</span></td></tr>`;
         content += `<tr><td>UUID</td><td style="font-size:0.8em; font-family:monospace">${escapeHtml(target.uuid)}</td></tr>`;
         content += `</table></div>`;
 

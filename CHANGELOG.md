@@ -1,4 +1,4 @@
-## [2.5.16] - 2026-10-22
+## [2.5.18] - 2026-10-23
 ### Neu
 - Hue-Szenen aus Loxone abrufen: Neuer Tab **🎬 Szenen** mit Auswahl Raum/Zone und zugehöriger Szene. Die Szene wird mit eigenem Loxone Namen gespeichert (per Hue-ID, Teil von Backup/Restore). `/<name>/1` ruft die Szene ab (`recall: active`), `/<name>/0` schaltet den Raum bzw. die Zone aus. Beide Befehle laufen über den globalen Hue-Scheduler mit Bridge-Limit und 429-Backoff.
 - XML-Export `lox_scenes.xml` („LoxHueBridge Scenes“) mit einem digitalen virtuellen Ausgang pro Szene (`CmdOn` `/<name>/1`, `CmdOff` `/<name>/0`).
@@ -7,6 +7,20 @@
 
 ### Prüfungen
 - Tests für Szenenliste pro Raum/Zone (inkl. Teilresultate), Abruf und Ausschalten, Hue `errors[]`, Szenen-Routen, XML-Export und Umbenennen.
+
+## [2.5.17] - 2026-10-22
+### Korrekturen
+- Dark Mode im Dashboard: Gruppenboxen der Mehrlampensynchronisierung, Timing-Test-Vorschau, Abschnittsüberschriften im Tab System, Status-Badges (An/Aus, Offen/Zu, Batterie, Typ, Fähigkeiten) und der Hover-Effekt der Mapping-Karten hatten fest kodierte helle Hintergründe und waren im Dark Mode kaum lesbar. Sie nutzen jetzt Theme-Variablen mit hellen und dunklen Werten.
+
+## [2.5.16] - 2026-10-22
+### Neu
+- Schalter **Anfragen protokollieren** im Tab System (oder `LOG_REQUESTS=true`): Jede eingehende Anfrage wird mit Methode, Pfad, HTTP-Status, Dauer und Absender ins Log geschrieben, Kategorie `HTTP` mit neuem Filter 🌐. Die Protokollierung sitzt vor dem Passwortschutz, daher erscheinen auch abgewiesene Anfragen (401, 400, 404). Dashboard-Abfragen (`/api/*`) und statische Dateien werden ausgelassen, Query-Strings nicht protokolliert.
+
+### Korrekturen
+- `/{name}/rgbw/<v>` ist bei aktivem Passwortschutz wieder ohne Login erreichbar. Die Ausnahmeliste in `auth.js` kannte `rgbw` nicht, Loxone erhielt HTTP 401. Router und Passwortschutz nutzen jetzt dieselbe Liste der Befehlstypen (`lib/commands.js`).
+
+### Prüfungen
+- Test, dass jeder explizite Befehlstyp ohne Login erreichbar ist, und Tests für die Anfrage-Protokollierung.
 
 ## [2.5.15] - 2026-10-22
 ### Neu
